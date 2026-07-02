@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>JobMatch — Tu radar de vacantes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet" /><style>
+/* ── TOKENS ─────────────────────────────────────────────────────── */
+:root {
+  --bg:        #0B0F19;
+  --surface:   #151B2C;
+  --surface2:  #1F2942;
+  --border:    #2D3958;
+  --accent:    #6366F1;
+  --accent2:   #A5B4FC;
+  --green:     #10B981;
+  --yellow:    #F59E0B;
+  --red:       #EF4444;
+  --text:      #F9FAFB;
+  --text-secondary: #E5E7EB;
+  --muted:     #9CA3AF;
+  --card-r:    16px;
+  --font-head: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text-secondary); font-family: var(--font-body); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+
+/* ── LAYOUT ─────────────────────────────────────────────────────── */
+.shell { display: flex; min-height: 100vh; }
+.sidebar { width: 240px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 1.75rem 1.25rem; gap: 0.25rem; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.main { flex: 1; padding: 2.5rem; max-width: 1300px; width: 100%; margin: 0 auto; }
+.logo { font-family: var(--font-head); font-size: 24px; font-weight: 800; color: var(--text); margin-bottom: 2rem; padding: 0 0.5rem; letter-spacing: -0.5px; }
+.logo span { color: var(--accent); }
+
+.nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; color: var(--muted); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; border: none; background: none; width: 100%; text-align: left; }
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: var(--accent); color: #fff; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+.nav-item svg { flex-shrink: 0; }
+.nav-divider { height: 1px; background: var(--border); margin: 1rem 0; }
+.nav-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; padding: 0 12px; margin-bottom: 6px; }
+
+/* ── SPLIT GRID LAYOUT ──────────────────────────────────────────── */
+.split-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .split-grid {
+    grid-template-columns: 1.1fr 0.9fr;
+  }
+  .split-grid.equal {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ── VIEWS ──────────────────────────────────────────────────────── */
+.view { display: none; }
+.view.active { display: block; }
+.page-title { font-family: var(--font-head); font-size: 32px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; margin-bottom: 0.35rem; }
+.page-sub { color: var(--muted); font-size: 14px; margin-bottom: 2rem; }
+
+/* ── SETUP ──────────────────────────────────────────────────────── */
+.setup-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-r); padding: 1.75rem; margin-bottom: 1.25rem; }
+.setup-card h3 { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+.setup-row { display: flex; gap: 10px; align-items: center; }
+.setup-row input { flex: 1; }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); display: inline-block; margin-right: 8px; }
+.status-dot.ok { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.status-text { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+/* ── INPUTS ─────────────────────────────────────────────────────── */
+input, textarea, select {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+  color: var(--text); font-family: var(--font-body); font-size: 13.5px;
+  padding: 10px 14px; width: 100%; outline: none; transition: all 0.2s;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15); }
+textarea { resize: vertical; min-height: 120px; }
+select option { background: var(--surface2); }
+label { font-size: 12px; font-weight: 600; color: var(--text); display: block; margin-bottom: 6px; margin-top: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+label:first-child { margin-top: 0; }
+
+/* ── BUTTONS ────────────────────────────────────────────────────── */
+button { font-family: var(--font-body); cursor: pointer; border: none; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.btn { background: var(--accent); color: #fff; border-radius: 10px; padding: 10px 20px; font-size: 13.5px; font-weight: 600; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2); }
+.btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 9px 18px; font-size: 13.5px; font-weight: 500; }
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+.btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 8px; }
+.btn-ghost { background: transparent; color: var(--muted); border-radius: 8px; padding: 6px 12px; font-size: 12px; }
+.btn-ghost:hover { background: var(--surface2); color: var(--text); }
+.btn-danger { background: transparent; color: var(--red); border: 1px solid var(--red); border-radius: 8px; padding: 6px 14px; font-size: 12px; }
+.btn-danger:hover { background: var(--red); color: #fff; }
+
+/* ── CARDS ──────────────────────────────────────────────────────── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-r); padding: 1.5rem; transition: all 0.2s; position: relative; }
+.card:hover { border-color: var(--border); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.25); }
+.card + .card { margin-top: 12px; }
+.card-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.job-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.job-company { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.card-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+.card-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+/* ── BADGES ─────────────────────────────────────────────────────── */
+.badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; white-space: nowrap; text-transform: uppercase; letter-spacing: 0.03em; }
+.badge-purple { background: rgba(99, 102, 241, 0.15); color: var(--accent2); border: 1px solid rgba(99, 102, 241, 0.3); }
+.badge-green  { background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
+.badge-yellow { background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
+.badge-red    { background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+.badge-gray   { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+.badge-applied { background: rgba(59, 130, 246, 0.15); color: #60A5FA; border: 1px solid rgba(59, 130, 246, 0.3); }
+
+/* ── STATS ──────────────────────────────────────────────────────── */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 2rem; }
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-r); padding: 2rem 1.75rem; transition: all 0.2s; display: flex; flex-direction: column; justify-content: space-between; min-height: 145px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.stat:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+.stat-num { font-family: var(--font-head); font-size: 42px; font-weight: 800; color: var(--text); line-height: 1; }
+.stat-lbl { font-size: 11px; color: var(--muted); margin-top: auto; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+
+/* ── AI OUTPUT ──────────────────────────────────────────────────── */
+.ai-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-r); overflow: hidden; margin-bottom: 1.5rem; }
+.ai-panel-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(31, 41, 66, 0.2); }
+.ai-panel-title { font-size: 14px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.ai-panel-body { padding: 1.5rem; font-size: 13.5px; line-height: 1.8; color: var(--text-secondary); min-height: 100px; white-space: pre-wrap; }
+.ai-panel-body.loading { color: var(--muted); font-style: italic; }
+
+.fit-bar-wrap { margin: 1.25rem 0; }
+.fit-bar-label { font-size: 12.5px; font-weight: 600; color: var(--text); margin-bottom: 8px; display: flex; justify-content: space-between; }
+.fit-bar { height: 10px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+.fit-bar-fill { height: 100%; border-radius: 99px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+
+/* ── INTERVIEW ──────────────────────────────────────────────────── */
+.interview-tabs { display: flex; gap: 6px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.itab { padding: 8px 16px; border-radius: 8px; font-size: 12.5px; font-weight: 600; background: var(--surface2); color: var(--muted); border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; }
+.itab:hover { color: var(--text); border-color: var(--muted); }
+.itab.active { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25); }
+.chat-wrap { display: flex; flex-direction: column; gap: 12px; max-height: 480px; overflow-y: auto; padding: 1.5rem; background: rgba(11, 15, 25, 0.4); }
+.msg { padding: 12px 16px; border-radius: 12px; font-size: 13.5px; line-height: 1.7; max-width: 85%; white-space: pre-wrap; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.msg-ai { background: var(--surface2); color: var(--text-secondary); align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid var(--border); }
+.msg-user { background: var(--accent); color: #fff; align-self: flex-end; border-bottom-right-radius: 2px; }
+.chat-input-row { display: flex; gap: 10px; padding: 1.25rem; border-top: 1px solid var(--border); background: var(--surface); }
+.chat-input-row input { flex: 1; }
+
+/* ── SKILLS & EXPERIENCE (TRAJECTORY) ───────────────────────────── */
+.exp-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; position: relative; }
+.exp-item-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+.exp-item-title { font-weight: 700; color: var(--text); font-size: 15px; }
+.exp-item-company { font-size: 13px; color: var(--accent2); font-weight: 500; }
+.exp-item-date { font-size: 12px; color: var(--muted); }
+.exp-item-desc { font-size: 13px; color: var(--text-secondary); margin-top: 8px; white-space: pre-line; line-height: 1.6; }
+.exp-item-actions { display: flex; gap: 6px; margin-top: 10px; justify-content: flex-end; }
+
+.skill-list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 1rem; }
+.skill-card-item { display: flex; justify-content: space-between; align-items: center; background: var(--surface2); border: 1px solid var(--border); padding: 10px 14px; border-radius: 10px; font-size: 13.5px; }
+.skill-card-name { font-weight: 600; color: var(--text); }
+.skill-card-actions { display: flex; align-items: center; gap: 8px; }
+
+/* ── INTERACTIVE ASSESSMENT CARDS ───────────────────────────────── */
+.assess-container { display: flex; flex-direction: column; gap: 12px; margin: 1.5rem 0; }
+.assess-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; transition: border-color 0.2s; }
+.assess-card.verified { border-left: 4px solid var(--green); }
+.assess-card.missing { border-left: 4px solid var(--yellow); }
+.assess-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.assess-title { font-weight: 700; color: var(--text); font-size: 14.5px; }
+.assess-desc { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+.assess-options { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.assess-opt { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px; text-align: center; font-size: 11.5px; cursor: pointer; color: var(--muted); font-weight: 500; transition: all 0.15s; }
+.assess-opt:hover { border-color: var(--muted); color: var(--text); }
+.assess-opt.active { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2); }
+
+.cv-preview { background: var(--surface2); border-radius: 10px; padding: 1.25rem; font-size: 12.5px; color: var(--muted); max-height: 250px; overflow-y: auto; white-space: pre-wrap; margin-top: 1rem; font-family: monospace; border: 1px solid var(--border); }
+
+/* ── EMPTY ──────────────────────────────────────────────────────── */
+.empty { text-align: center; padding: 4rem 1.5rem; color: var(--muted); }
+.empty-icon { font-size: 48px; margin-bottom: 1.25rem; opacity: 0.3; }
+.empty-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+
+/* ── MODAL ──────────────────────────────────────────────────────── */
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.modal-bg.open { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--card-r); padding: 2rem; width: 90%; max-width: 680px; max-height: 88vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+.modal-title { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--text); }
+.modal-close { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; padding: 4px; display: inline-flex; align-items: center; }
+.modal-close:hover { color: var(--text); }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 1.5rem; }
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ── SECTION ─────────────────────────────────────────────────────── */
+.section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent2); margin-bottom: 10px; margin-top: 1.5rem; display: flex; align-items: center; gap: 6px; }
+.section-title:first-child { margin-top: 0; }
+.divider { height: 1px; background: var(--border); margin: 1.5rem 0; }
+
+/* ── PULSE ──────────────────────────────────────────────────────── */
+@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } }
+.pulse { animation: pulse 1.4s ease-in-out infinite; }
+
+/* ── SCROLL ─────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ── RESPONSIVE ─────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .shell { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; flex-direction: row; flex-wrap: wrap; padding: 1rem; position: static; border-right: none; border-bottom: 1px solid var(--border); }
+  .logo { display: none; }
+  .nav-item { padding: 8px 12px; font-size: 12px; width: auto; }
+  .main { padding: 1.5rem; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .split-grid { grid-template-columns: 1fr !important; }
+  .modal-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ── SIDEBAR ─────────────────────────────────────────────── -->
+  <nav class="sidebar">
+    <div class="logo">Job<span>Match</span></div>
+
+    <div class="nav-label">Principal</div>
+    <button class="nav-item active" onclick="showView('dashboard')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-item" onclick="showView('analyze')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Analizar vacante
+    </button>
+    <button class="nav-item" onclick="showView('vacantes')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      Mis vacantes
+    </button>
+
+    <div class="nav-divider"></div>
+    <div class="nav-label">Herramientas</div>
+    <button class="nav-item" onclick="showView('trajectory')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Mi Trayectoria
+    </button>
+    <button class="nav-item" onclick="showView('interview')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Entrevistas
+    </button>
+
+    <div class="nav-divider"></div>
+    <button class="nav-item" onclick="showView('setup')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+      Configuración
+    </button>
+  </nav>
+
+  <!-- ── MAIN ────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- DASHBOARD ──────────────────────────────────────────── -->
+    <div id="view-dashboard" class="view active">
+      <div class="page-title">Dashboard</div>
+      <div class="page-sub">Tu búsqueda de empleo en un vistazo</div>
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-num" id="s-total">0</div><div class="stat-lbl">Guardadas</div></div>
+        <div class="stat"><div class="stat-num" id="s-applied">0</div><div class="stat-lbl">Aplicadas</div></div>
+        <div class="stat"><div class="stat-num" id="s-interview">0</div><div class="stat-lbl">Entrevistas</div></div>
+        <div class="stat"><div class="stat-num" id="s-fit">—</div><div class="stat-lbl">Fit promedio</div></div>
+      </div>
+      
+      <div class="split-grid">
+        <div>
+          <div class="section-title">Actividad reciente</div>
+          <div id="recent-list"><div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Sin vacantes aún</div><p>Ve a "Analizar vacante" para empezar</p></div></div>
+        </div>
+        <div>
+          <div class="section-title">Resumen de Habilidades</div>
+          <div class="card">
+            <div id="dashboard-skills-list" style="display:flex; flex-direction:column; gap:8px;">
+              <div class="empty" style="padding: 1.5rem 1rem;">
+                <div style="font-size:24px; margin-bottom:8px; opacity:0.3;">🛠️</div>
+                <div style="font-size:13px; font-weight:600; color:var(--text)">Sin habilidades registradas</div>
+                <p style="font-size:12px; color:var(--muted)">Regístralas en "Mi Trayectoria"</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="section-title" style="margin-top:1.5rem">Acciones rápidas</div>
+          <div class="card" style="display:flex; flex-direction:column; gap:8px;">
+            <button class="btn btn-outline" onclick="showView('analyze')" style="justify-content:flex-start;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Analizar nueva vacante</button>
+            <button class="btn btn-outline" onclick="showView('trajectory')" style="justify-content:flex-start;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Gestionar trayectoria y skills</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYZE ────────────────────────────────────────────── -->
+    <div id="view-analyze" class="view">
+      <div class="page-title">Analizar vacante</div>
+      <div class="page-sub">Pega el JD y te digo si haces match, qué te falta y cómo aplicar</div>
+
+      <div class="split-grid">
+        <!-- Columna Izquierda: Formulario -->
+        <div>
+          <div class="analyze-form">
+            <div class="form-grid">
+              <div>
+                <label>Empresa</label>
+                <input type="text" id="a-company" placeholder="Ej: Spotify, Nubank..." />
+              </div>
+              <div>
+                <label>Título del puesto</label>
+                <input type="text" id="a-title" placeholder="Ej: QA Manual Tester" />
+              </div>
+              <div>
+                <label>¿Dónde lo viste?</label>
+                <select id="a-source">
+                  <option value="">Selecciona...</option>
+                  <option>Indeed</option><option>LinkedIn</option><option>Computrabajo</option>
+                  <option>Glassdoor</option><option>OCC</option><option>Upwork</option>
+                  <option>Sitio directo</option><option>Referido</option><option>Otro</option>
+                </select>
+              </div>
+              <div>
+                <label>Modalidad</label>
+                <select id="a-remote">
+                  <option value="remote">🟢 Remoto</option>
+                  <option value="hybrid">🟡 Híbrido</option>
+                  <option value="onsite">🔴 Presencial</option>
+                  <option value="unknown">⚠️ No especifica</option>
+                </select>
+              </div>
+              <div class="form-full">
+                <label>Job Description completo</label>
+                <textarea id="a-jd" rows="9" placeholder="Pega aquí el texto completo del JD..."></textarea>
+              </div>
+              <div class="form-full">
+                <label>URL de la vacante (opcional)</label>
+                <input type="text" id="a-url" placeholder="https://..." />
+              </div>
+            </div>
+            <div class="form-actions" style="margin-top:1.25rem;">
+              <button class="btn" onclick="analyzeJob()">Analizar con IA ✦</button>
+              <button class="btn-outline" onclick="clearAnalyzeForm()">Limpiar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna Derecha: Output y Autoevaluación -->
+        <div>
+          <!-- Placeholder cuando no hay análisis -->
+          <div id="analysis-placeholder" class="card empty">
+            <div class="empty-icon">📊</div>
+            <div class="empty-title">Sin análisis aún</div>
+            <p>Completa el formulario de la izquierda y haz clic en "Analizar con IA ✦" para ver los resultados aquí.</p>
+          </div>
+
+          <div id="analysis-output" style="display:none">
+            <!-- Barra de Fit -->
+            <div class="card" style="margin-bottom: 1.25rem;">
+              <div class="card-row">
+                <div class="job-title" style="font-size: 18px;">Resultado del Match</div>
+                <span id="fit-badge" class="badge"></span>
+              </div>
+              <div class="fit-bar-wrap" style="padding: 0 1.25rem;">
+                <div class="fit-bar-label"><span>Compatibilidad con tu perfil</span><span id="fit-pct">—</span></div>
+                <div class="fit-bar"><div class="fit-bar-fill" id="fit-fill" style="width:0%"></div></div>
+              </div>
+            </div>
+
+            <!-- Panel de Análisis detallado de IA -->
+            <div class="ai-panel">
+              <div class="ai-panel-header">
+                <div class="ai-panel-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  Retroalimentación de la IA
+                </div>
+              </div>
+              <div class="ai-panel-body" id="analysis-text"></div>
+            </div>
+
+            <!-- Validación interactiva de Habilidades -->
+            <div class="card" style="margin-bottom: 1.25rem;" id="skills-assessment-card">
+              <div class="job-title" style="font-size: 15px; margin-bottom: 0.5rem;">Validación de Requisitos Clave</div>
+              <p style="font-size: 12.5px; color: var(--muted); margin-bottom: 1rem;">Para afinar el match y personalizar tu CV, selecciona o confirma tu nivel en las herramientas solicitadas por la vacante:</p>
+              <div class="assess-container" id="assess-skills-list">
+                <!-- Se cargará dinámicamente con JS -->
+              </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div style="display:flex; gap:8px; margin-bottom:1.5rem; flex-wrap:wrap">
+              <button class="btn" onclick="generateCV()">Generar CV personalizado ✦</button>
+              <button class="btn-outline" onclick="saveCurrentJob()">Guardar vacante</button>
+              <button class="btn-ghost" onclick="prepareInterview()">Preparar entrevista →</button>
+            </div>
+
+            <!-- Panel de CV Personalizado -->
+            <div id="cv-output" style="display:none; margin-top:1.5rem">
+              <div class="ai-panel">
+                <div class="ai-panel-header">
+                  <div class="ai-panel-title">CV Personalizado y Optimizado</div>
+                  <button class="btn-ghost btn-sm" onclick="copyCV()">Copiar</button>
+                </div>
+                <div class="ai-panel-body" id="cv-text" style="font-size:12.5px; line-height:1.6; font-family:monospace; background:var(--surface2);"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- VACANTES ────────────────────────────────────────────── -->
+    <div id="view-vacantes" class="view">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.75rem">
+        <div>
+          <div class="page-title">Mis vacantes</div>
+          <div class="page-sub">Todas las posiciones que estás siguiendo</div>
+        </div>
+        <button class="btn" onclick="showView('analyze')">+ Agregar</button>
+      </div>
+      <div id="vacantes-list"></div>
+    </div>
+
+    <!-- TRAJECTORY ─────────────────────────────────────────── -->
+    <div id="view-trajectory" class="view">
+      <div class="page-title">Mi Trayectoria</div>
+      <div class="page-sub">Gestiona tu perfil profesional, historial laboral y base de habilidades</div>
+
+      <div class="split-grid">
+        <!-- Columna Izquierda: Perfil y Experiencia -->
+        <div>
+          <!-- Perfil Profesional -->
+          <div class="card" style="margin-bottom: 1.5rem;">
+            <div class="job-title" style="font-size: 16px; margin-bottom: 1rem;">👤 Perfil General</div>
+            <div>
+              <label>Nombre completo</label>
+              <input type="text" id="profile-name" placeholder="Tu nombre..." />
+              
+              <label>Email</label>
+              <input type="text" id="profile-email" placeholder="correo@ejemplo.com" />
+              
+              <label>Ubicación</label>
+              <input type="text" id="profile-location" placeholder="Ciudad, País" />
+              
+              <label>¿Solo búsqueda remota?</label>
+              <select id="profile-remote">
+                <option value="yes">Sí, solo remoto</option>
+                <option value="no">No, cualquier modalidad</option>
+              </select>
+              
+              <label>Notas sobre tu perfil (bio, stack general, metas)</label>
+              <textarea id="profile-notes" rows="4" placeholder="Ej: Desarrollador Backend interesado en QA y automatización de pruebas con Python/Java..."></textarea>
+            </div>
+            <button class="btn btn-sm" style="margin-top: 1rem; width: 100%;" onclick="saveProfile()">Guardar perfil</button>
+          </div>
+
+          <!-- Historial Laboral -->
+          <div class="card">
+            <div class="job-title" style="font-size: 16px; margin-bottom: 1rem;">💼 Historial Laboral</div>
+            <p style="font-size: 12.5px; color: var(--muted); margin-bottom: 1rem;">Agrega tus experiencias previas. La IA las adaptará dinámicamente al generar tus CVs.</p>
+            
+            <!-- Formulario de Experiencia -->
+            <div style="background: var(--surface2); padding: 1.25rem; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 1.5rem;">
+              <input type="hidden" id="exp-id" value="" />
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div>
+                  <label style="margin-top:0;">Empresa</label>
+                  <input type="text" id="exp-company" placeholder="Ej: Google, Startup..." />
+                </div>
+                <div>
+                  <label style="margin-top:0;">Puesto / Rol</label>
+                  <input type="text" id="exp-role" placeholder="Ej: QA Engineer" />
+                </div>
+              </div>
+              <label>Periodo (fechas o texto libre)</label>
+              <input type="text" id="exp-date" placeholder="Ej: Ene 2024 - Act, 2 años" />
+              
+              <label>Logros y Responsabilidades (sé detallado)</label>
+              <textarea id="exp-desc" rows="4" placeholder="Ej: Lideré pruebas de automatización, configuré Jenkins CI/CD, reporté fallos en Jira, etc..."></textarea>
+              
+              <div style="display:flex; gap:8px; margin-top: 1rem;">
+                <button class="btn btn-sm" onclick="saveExperience()">Guardar Puesto</button>
+                <button class="btn-ghost btn-sm" onclick="clearExperienceForm()">Cancelar</button>
+              </div>
+            </div>
+
+            <!-- Contenedor de lista de puestos -->
+            <div id="experience-list">
+              <!-- Se renderizará con JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna Derecha: Base de Habilidades -->
+        <div>
+          <div class="card">
+            <div class="job-title" style="font-size: 16px; margin-bottom: 1rem;">🛠️ Base de Habilidades</div>
+            <p style="font-size: 12.5px; color: var(--muted); margin-bottom: 1.25rem;">Registra las tecnologías y herramientas que dominas para realizar match con las vacantes.</p>
+            
+            <!-- Formulario de Habilidad -->
+            <div style="display: flex; gap: 8px; align-items: flex-end; margin-bottom: 1.5rem;">
+              <div style="flex: 1;">
+                <label style="margin-top:0;">Habilidad / Herramienta</label>
+                <input type="text" id="skill-name-input" placeholder="Ej: Jira, React, Python..." onkeydown="if(event.key==='Enter') addSkill()" />
+              </div>
+              <div style="width: 130px;">
+                <label style="margin-top:0;">Nivel</label>
+                <select id="skill-level-input">
+                  <option value="Junior">Junior</option>
+                  <option value="Mid">Mid</option>
+                  <option value="Senior">Senior</option>
+                  <option value="Experto">Experto</option>
+                </select>
+              </div>
+              <button class="btn" style="height: 40px; padding: 0 16px;" onclick="addSkill()">+</button>
+            </div>
+
+            <!-- Listado de Habilidades -->
+            <div id="skills-list" class="skill-list-grid" style="display:grid; gap: 8px;">
+              <!-- Se renderizará con JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INTERVIEW ──────────────────────────────────────────── -->
+    <div id="view-interview" class="view">
+      <div class="page-title">Preparar entrevista</div>
+      <div class="page-sub">Selecciona una vacante y elige el tipo de práctica para simular con la IA</div>
+
+      <div class="split-grid">
+        <!-- Columna Izquierda: Información de soporte para la entrevista -->
+        <div>
+          <div class="card" style="margin-bottom: 1.25rem;">
+            <label>¿Para qué vacante te preparas?</label>
+            <select id="interview-job-select" onchange="loadInterviewContext()" style="margin-top: 6px;">
+              <option value="">Selecciona una vacante guardada...</option>
+            </select>
+          </div>
+
+          <div id="interview-job-info-card" class="card" style="display:none;">
+            <div class="job-title" id="int-job-title" style="font-size:16px;">Puesto</div>
+            <div class="job-company" id="int-job-company" style="font-size:13px; margin-bottom: 1rem;">Empresa</div>
+            
+            <div class="section-title" style="margin-top:0.5rem;">🎯 Por qué haces match</div>
+            <p id="int-why-match" style="font-size:12.5px; line-height: 1.6; margin-bottom: 1rem; color: var(--text-secondary);">-</p>
+
+            <div class="section-title">💡 Consejos para la entrevista</div>
+            <p id="int-tips" style="font-size:12.5px; line-height: 1.6; color: var(--text-secondary); white-space: pre-wrap;">-</p>
+          </div>
+
+          <div id="interview-placeholder-card" class="card empty">
+            <div class="empty-icon">💡</div>
+            <div class="empty-title">Sin vacante seleccionada</div>
+            <p style="font-size:12px;">Selecciona una vacante arriba para ver su análisis de match y consejos para la entrevista aquí mientras conversas con el simulador.</p>
+          </div>
+        </div>
+
+        <!-- Columna Derecha: Chat interactivo -->
+        <div>
+          <div class="interview-tabs">
+            <button class="itab active" onclick="setITab('tech', this)">Preguntas técnicas</button>
+            <button class="itab" onclick="setITab('behav', this)">Preguntas conductuales</button>
+            <button class="itab" onclick="setITab('hard', this)">Preguntas difíciles</button>
+            <button class="itab" onclick="setITab('sim', this)">Simulacro libre</button>
+          </div>
+
+          <div class="ai-panel">
+            <div class="chat-wrap" id="interview-chat">
+              <div class="msg msg-ai">Selecciona una vacante a la izquierda y elige el tipo de práctica para empezar. 💼</div>
+            </div>
+            <div class="chat-input-row">
+              <input type="text" id="interview-input" placeholder="Escribe tu respuesta aquí..." onkeydown="if(event.key==='Enter') sendInterviewMsg()" />
+              <button class="btn btn-sm" onclick="sendInterviewMsg()">Enviar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETUP ──────────────────────────────────────────────── -->
+    <div id="view-setup" class="view">
+      <div class="page-title">Configuración</div>
+      <div class="page-sub">Conecta servicios y configura tu perfil para adaptar tu radar de vacantes</div>
+
+      <div class="split-grid equal">
+        <!-- Columna Izquierda: Claves y Configuración de APIs -->
+        <div>
+          <div class="setup-card">
+            <h3>🤖 Gemini API Key</h3>
+            <div class="setup-row">
+              <input type="password" id="gemini-key-input" placeholder="AIza..." />
+              <button class="btn btn-sm" onclick="saveGeminiKey()">Guardar</button>
+            </div>
+            <div class="status-text" id="gemini-status">
+              <span class="status-dot" id="gemini-dot"></span>
+              <span id="gemini-status-text">No configurada — obtén tu key gratis en <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent2)">aistudio.google.com</a></span>
+            </div>
+          </div>
+
+          <div class="setup-card">
+            <h3>🔥 Firebase</h3>
+            <label>API Key</label><input type="text" id="fb-apikey" placeholder="AIza..." />
+            <label>Auth Domain</label><input type="text" id="fb-authdomain" placeholder="tuapp.firebaseapp.com" />
+            <label>Project ID</label><input type="text" id="fb-projectid" placeholder="tu-project-id" />
+            <div style="margin-top:1.25rem; display:flex; gap:8px;">
+              <button class="btn btn-sm" onclick="saveFirebaseConfig()">Guardar</button>
+              <button class="btn-ghost btn-sm" onclick="testFirebase()">Probar conexión</button>
+            </div>
+            <div class="status-text" id="firebase-status">
+              <span class="status-dot" id="firebase-dot"></span>
+              <span id="firebase-status-text">No configurado — crea un proyecto en <a href="https://console.firebase.google.com" target="_blank" style="color:var(--accent2)">console.firebase.google.com</a></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Columna Derecha: Perfil Profesional del Usuario -->
+        <div>
+          <div class="setup-card">
+            <h3>👤 Tu perfil profesional</h3>
+            <label>Nombre completo</label>
+            <input type="text" id="profile-name" placeholder="Arianna Itzamina Aguilar Herrera" />
+            
+            <label>Email</label>
+            <input type="text" id="profile-email" placeholder="correo@ejemplo.com" />
+            
+            <label>Ubicación</label>
+            <input type="text" id="profile-location" placeholder="Ciudad de México, México" />
+            
+            <label>¿Solo búsqueda remota?</label>
+            <select id="profile-remote">
+              <option value="yes">Sí, solo remoto</option>
+              <option value="no">No, cualquier modalidad</option>
+            </select>
+            
+            <label>Notas sobre tu perfil (stack, nivel, preferencias)</label>
+            <textarea id="profile-notes" rows="6" placeholder="Ej: Busco roles QA o Backend Jr. en empresas remotas. Stack: Java, Spring Boot, QA manual, JUnit, Postman..."></textarea>
+            
+            <button class="btn btn-sm" style="margin-top:1.25rem; width:100%;" onclick="saveProfile()">Guardar perfil</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── DETAIL MODAL ──────────────────────────────────────────────── -->
+<div class="modal-bg" id="detail-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="dm-title">Vacante</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="dm-badges" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem"></div>
+    <div class="section-title">Job Description</div>
+    <div class="cv-preview" id="dm-jd"></div>
+    <div class="section-title">Análisis de IA</div>
+    <div class="cv-preview" id="dm-analysis"></div>
+    <div class="divider"></div>
+    <div class="section-title">Preparar entrevista</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-sm" onclick="goToInterview()">Simular entrevista ✦</button>
+      <button class="btn-outline btn-sm" onclick="goToInterview('hard')">Preguntas difíciles</button>
+    </div>
+    <div class="modal-actions">
+      <select id="dm-status" style="width:auto;font-size:12px;padding:5px 10px">
+        <option value="saved">Guardada</option>
+        <option value="applied">Aplicada</option>
+        <option value="interviewing">En proceso</option>
+        <option value="discarded">Descartada</option>
+      </select>
+      <button class="btn-outline btn-sm" onclick="updateJobStatus()">Actualizar estado</button>
+      <button class="btn-danger btn-sm" onclick="deleteCurrentJob()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCRIPTS ────────────────────────────────────────────────────── -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ── STATE ──────────────────────────────────────────────────────────
+let jobs = [];
+let db = null;
+let fbApp = null;
+let currentJobId = null;
+let currentITab = 'tech';
+let interviewHistory = [];
+let interviewContext = null;
+
+let skills = [];
+let experience = [];
+
+// ── HELPERS ────────────────────────────────────────────────────────
+window.$ = id => document.getElementById(id);
+
+function ls(k, v) { 
+  if (v !== undefined) {
+    localStorage.setItem(k, JSON.stringify(v));
+  } else { 
+    try { 
+      return JSON.parse(localStorage.getItem(k)); 
+    } catch { 
+      return null; 
+    } 
+  } 
+}
+
+function loadSkills() {
+  skills = ls('user_skills') || [];
+}
+
+function saveSkills() {
+  ls('user_skills', skills);
+}
+
+function loadExperience() {
+  experience = ls('user_experience') || [];
+}
+
+function saveExperienceData() {
+  ls('user_experience', experience);
+}
+
+function remoteLabel(r) {
+  return { remote: '<span class="badge badge-green">Remoto</span>', hybrid: '<span class="badge badge-yellow">Híbrido</span>', onsite: '<span class="badge badge-red">Presencial</span>' }[r] || '<span class="badge badge-yellow">No especifica</span>';
+}
+
+function statusBadge(s) {
+  return { saved: '<span class="badge badge-gray">Guardada</span>', applied: '<span class="badge badge-applied">Aplicada</span>', interviewing: '<span class="badge badge-yellow">En proceso</span>', discarded: '<span class="badge badge-red">Descartada</span>' }[s] || '';
+}
+
+function fitColor(n) {
+  if (n >= 75) return '#10B981';
+  if (n >= 50) return '#F59E0B';
+  return '#EF4444';
+}
+
+// ── NAVIGATION ─────────────────────────────────────────────────────
+window.showView = (v) => {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  $('view-' + v)?.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el => { if (el.getAttribute('onclick')?.includes(v)) el.classList.add('active'); });
+  if (v === 'vacantes') renderVacantes();
+  if (v === 'dashboard') renderDashboard();
+  if (v === 'interview') populateInterviewSelect();
+  if (v === 'setup') loadSetupFields();
+  if (v === 'trajectory') {
+    loadSkills();
+    loadExperience();
+    renderSkills();
+    renderExperience();
+    loadSetupFields();
+  }
+};
+
+// ── GEMINI ─────────────────────────────────────────────────────────
+async function callGemini(prompt) {
+  const key = ls('gemini_key');
+  if (!key) { alert('Configura tu Gemini API Key en Configuración primero.'); return null; }
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'Error Gemini'); }
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+async function callGeminiChat(messages) {
+  const key = ls('gemini_key');
+  if (!key) { alert('Configura tu Gemini API Key en Configuración primero.'); return null; }
+  const contents = messages.map(m => ({ role: m.role === 'ai' ? 'model' : 'user', parts: [{ text: m.text }] }));
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents })
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'Error Gemini'); }
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+// ── ANALYZE ────────────────────────────────────────────────────────
+window.analyzeJob = async () => {
+  const company = $('a-company').value.trim();
+  const title = $('a-title').value.trim();
+  const jd = $('a-jd').value.trim();
+  if (!company || !title || !jd) { alert('Completa empresa, título y JD.'); return; }
+
+  const remoteVal = $('a-remote').value;
+  if (ls('profile_remote') === 'yes' && remoteVal !== 'remote') {
+    const warn = remoteVal === 'onsite' ? '⚠️ Esta posición es PRESENCIAL — buscas solo remoto.' : '⚠️ La modalidad no está confirmada como remota.';
+    if (!confirm(warn + '\n\n¿Quieres continuar de todas formas?')) return;
+  }
+
+  $('analysis-placeholder').style.display = 'none';
+  $('analysis-output').style.display = 'block';
+  $('analysis-text').innerHTML = 'Analizando...';
+  $('analysis-text').className = 'ai-panel-body loading pulse';
+  $('fit-badge').textContent = '';
+  $('fit-fill').style.width = '0%';
+  $('cv-output').style.display = 'none';
+
+  loadSkills();
+  loadExperience();
+  const profile = ls('user_profile') || {};
+  const skillsText = skills.map(s => `- ${s.name} (Nivel: ${s.level})`).join('\n');
+  const expText = experience.map(e => `- ${e.role} en ${e.company} (${e.date}): ${e.desc}`).join('\n');
+
+  const prompt = `Eres un experto en selección de personal y desarrollo de carrera. Analiza el siguiente JD y el perfil del candidato.
+
+JD (Job Description):
+${jd}
+
+PERFIL DEL CANDIDATO:
+- Nombre: ${profile.name || 'No proporcionado'}
+- Resumen/Notas: ${profile.notes || 'No proporcionado'}
+- Habilidades registradas:
+${skillsText || 'Ninguna registrada'}
+- Historial Laboral:
+${expText || 'Ninguno registrado'}
+
+Responde OBLIGATORIAMENTE en este formato JSON puro, sin bloques markdown de triple comilla (no uses \`\`\`json ni \`\`\`) ni explicaciones adicionales, comenzando con { y terminando con }:
+{
+  "fit": <número 0-100>,
+  "remote_ok": <true | false | null>,
+  "why_match": "<Explicación de por qué el candidato sí encaja en el rol con base en su historial y habilidades>",
+  "why_no_match": "<Explicación de brechas, debilidades o por qué no hace match completo>",
+  "skills_to_improve": [
+    { "name": "Nombre de la skill", "reason": "Motivo de por qué mejorarla o estudiarla para este rol" }
+  ],
+  "required_skills": [
+    { "name": "Skill Requerida 1", "importance": "high" },
+    { "name": "Skill Requerida 2", "importance": "medium" }
+  ],
+  "summary": "<Resumen general de 2-3 oraciones sobre el match>",
+  "recommendation": "<APLICAR | APLICAR CON PRECAUCIÓN | NO APLICAR>",
+  "tips": "<3-5 consejos concretos para destacar en la aplicación>",
+  "entry_strategy": "<Estrategia para destacar o mitigar brechas>"
+}`;
+
+  try {
+    const raw = await callGemini(prompt);
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+    window._lastAnalysis = { company, title, jd, url: $('a-url').value.trim(), source: $('a-source').value, remote: remoteVal, result };
+
+    const fit = result.fit || 0;
+    $('fit-fill').style.width = fit + '%';
+    $('fit-fill').style.background = fitColor(fit);
+    $('fit-pct').textContent = fit + '%';
+    $('fit-badge').textContent = result.recommendation;
+    $('fit-badge').className = 'badge ' + (fit >= 70 ? 'badge-green' : fit >= 45 ? 'badge-yellow' : 'badge-red');
+
+    let output = '';
+    output += `<div style="margin-bottom: 1rem;"><strong>📋 RESUMEN:</strong><br>${result.summary}</div>`;
+    output += `<div style="margin-bottom: 1rem;"><strong style="color:var(--green);">✅ POR QUÉ SÍ HACES MATCH:</strong><br>${result.why_match || 'No detallado.'}</div>`;
+    output += `<div style="margin-bottom: 1rem;"><strong style="color:var(--red);">❌ POR QUÉ NO HACES MATCH:</strong><br>${result.why_no_match || 'No detallado.'}</div>`;
+    
+    if (result.skills_to_improve?.length) {
+      output += `<div style="margin-bottom: 1rem;"><strong style="color:var(--yellow);">📚 HABILIDADES POR MEJORAR / ESTUDIAR:</strong><ul style="margin-left: 1.25rem; margin-top:0.25rem;">`;
+      result.skills_to_improve.forEach(s => {
+        output += `<li><strong>${s.name}</strong>: ${s.reason}</li>`;
+      });
+      output += `</ul></div>`;
+    }
+    
+    output += `<div style="margin-bottom: 1rem;"><strong>💡 CONSEJOS CLAVE:</strong><br>${result.tips || 'No detallados.'}</div>`;
+    
+    if (result.entry_strategy) {
+      output += `<div><strong>🚀 ESTRATEGIA PARA DESTACAR:</strong><br>${result.entry_strategy}</div>`;
+    }
+
+    $('analysis-text').innerHTML = output;
+    $('analysis-text').className = 'ai-panel-body';
+
+    // Renderizar evaluación interactiva de skills
+    renderSkillsAssessment(result.required_skills || []);
+  } catch (e) {
+    $('analysis-text').textContent = 'Error al analizar: ' + e.message;
+    $('analysis-text').className = 'ai-panel-body';
+  }
+};
+
+// ── SKILLS ASSESSMENT LOGIC ────────────────────────────────────────
+window._currentRequiredSkills = [];
+
+function renderSkillsAssessment(requiredSkills) {
+  window._currentRequiredSkills = requiredSkills;
+  const list = $('assess-skills-list');
+  if (!requiredSkills || !requiredSkills.length) {
+    list.innerHTML = '<p style="font-size:12.5px; color:var(--muted); text-align:center; padding: 1rem;">No se detectaron requisitos de habilidades específicos en la vacante.</p>';
+    return;
+  }
+
+  list.innerHTML = requiredSkills.map(req => {
+    const nameLower = req.name.toLowerCase().trim();
+    const existing = skills.find(s => s.name.toLowerCase().trim() === nameLower);
+    const savedLevel = existing ? existing.level : null;
+    
+    const isVerified = !!existing;
+    const badgeText = isVerified ? `En tu perfil: ${existing.level}` : 'No registrada';
+    const importanceBadge = req.importance === 'high' ? '<span class="badge badge-red" style="font-size:9px; padding:1px 6px;">Crítica</span>' : '<span class="badge badge-purple" style="font-size:9px; padding:1px 6px;">Deseable</span>';
+
+    const levels = ['No la conozco', 'Junior', 'Mid', 'Senior'];
+    const optionsHTML = levels.map(lvl => {
+      let active = false;
+      if (lvl === 'No la conozco' && !isVerified) active = true;
+      if (lvl === savedLevel) active = true;
+      
+      return `<div class="assess-opt ${active ? 'active' : ''}" onclick="assessSelectSkill('${req.name}', '${lvl}', this)">${lvl}</div>`;
+    }).join('');
+
+    let lvlHelp = '';
+    if (nameLower.includes('jira')) {
+      lvlHelp = 'Jr: Creas/actualizas tareas | Mid: Configuras tableros y releases | Sr: Creas flujos/workflows.';
+    } else if (nameLower.includes('git') || nameLower.includes('github')) {
+      lvlHelp = 'Jr: Pull/push básico | Mid: Ramas, pull requests y conflictos | Sr: CI/CD y webhooks.';
+    } else if (nameLower.includes('qa') || nameLower.includes('test') || nameLower.includes('testing')) {
+      lvlHelp = 'Jr: Ejecutas casos | Mid: Creas casos de prueba y reportes | Sr: Automatizas y defines planes.';
+    } else {
+      lvlHelp = 'Jr: Uso básico con guía | Mid: Uso autónomo en proyectos | Sr: Dominio avanzado y configuración.';
+    }
+
+    return `
+      <div class="assess-card ${isVerified ? 'verified' : 'missing'}">
+        <div class="assess-header">
+          <div class="assess-title" style="display:flex; align-items:center; gap:6px;">${req.name} ${importanceBadge}</div>
+          <span class="badge ${isVerified ? 'badge-green' : 'badge-yellow'}" style="font-size:10px;">${badgeText}</span>
+        </div>
+        <div class="assess-desc">${lvlHelp}</div>
+        <div class="assess-options">
+          ${optionsHTML}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+window.assessSelectSkill = (name, level, el) => {
+  const parent = el.parentNode;
+  parent.querySelectorAll('.assess-opt').forEach(opt => opt.classList.remove('active'));
+  el.classList.add('active');
+
+  const nameLower = name.toLowerCase().trim();
+  const existingIdx = skills.findIndex(s => s.name.toLowerCase().trim() === nameLower);
+
+  if (level === 'No la conozco') {
+    if (existingIdx !== -1) {
+      skills.splice(existingIdx, 1);
+    }
+  } else {
+    if (existingIdx !== -1) {
+      skills[existingIdx].level = level;
+    } else {
+      skills.push({ name: name, level: level });
+    }
+  }
+
+  saveSkills();
+  renderSkills();
+  renderDashboardSkills();
+
+  const card = parent.parentNode;
+  const badge = card.querySelector('.assess-header .badge');
+  if (level === 'No la conozco') {
+    card.className = 'assess-card missing';
+    badge.textContent = 'No registrada';
+    badge.className = 'badge badge-yellow';
+  } else {
+    card.className = 'assess-card verified';
+    badge.textContent = `En tu perfil: ${level}`;
+    badge.className = 'badge badge-green';
+  }
+};
+
+// ── GENERATE CV ────────────────────────────────────────────────────
+window.generateCV = async () => {
+  const data = window._lastAnalysis;
+  if (!data) { alert('Primero analiza una vacante.'); return; }
+
+  $('cv-output').style.display = 'block';
+  $('cv-text').textContent = 'Generando CV personalizado y adaptando tu trayectoria...';
+  $('cv-text').className = 'ai-panel-body loading pulse';
+
+  loadSkills();
+  loadExperience();
+  const profile = ls('user_profile') || {};
+  const skillsText = skills.map(s => `- ${s.name} (${s.level})`).join('\n');
+  const expText = experience.map(e => `EMPRESA: ${e.company}\nPUESTO: ${e.role}\nPERIODO: ${e.date}\nRESPONSABILIDADES Y LOGROS:\n${e.desc}`).join('\n\n');
+
+  const prompt = `Eres un experto en redacción de CVs y reclutador senior. 
+Crea un CV completo y altamente optimizado desde cero para el candidato adaptado específicamente para aplicar a la vacante "${data.title}" en "${data.company}".
+
+INFORMACIÓN DEL CANDIDATO:
+- Nombre: ${profile.name || 'Arianna Itzamina Aguilar Herrera'}
+- Contacto: ${profile.email || 'correo@ejemplo.com'} · ${profile.location || 'Ciudad de México, México'}
+- Perfil General / Resumen: ${profile.notes || 'No especificado'}
+
+HABILIDADES DEL CANDIDATO (Con niveles autoevaluados):
+${skillsText || 'Ninguna registrada'}
+
+HISTORIAL LABORAL COMPLETO:
+${expText || 'Ninguna experiencia laboral registrada'}
+
+VACANTE OBJETIVO:
+- Puesto: ${data.title}
+- Empresa: ${data.company}
+- Job Description (JD):
+${data.jd}
+
+INSTRUCCIONES CLAVE DE REDACCIÓN Y SELECCIÓN:
+1. **Adaptación Selectiva de Experiencia**: Selecciona y reescribe las descripciones de los trabajos anteriores del candidato para destacar los logros y responsabilidades que sean relevantes para la vacante actual.
+   - Si la vacante es de Tester/QA, enfócate en tareas de pruebas, aseguramiento de calidad, Jira, planes de prueba, automatización y reporte de errores en su historial laboral.
+   - Si la vacante es de Desarrollador, resalta la programación, APIs, base de datos, arquitectura y resolución de bugs en el mismo historial.
+   - Mantén los nombres de empresa y fechas reales tal como se proveen.
+2. **Habilidades**: Incluye las habilidades de su perfil que hagan match con los requisitos del JD, indicando su nivel de experiencia de forma implícita o explícita.
+3. **Resumen Profesional**: Escribe un párrafo de perfil inicial de 3-4 líneas extremadamente atractivo, que conecte el stack del candidato con los dolores y necesidades específicas de la vacante.
+4. **Formato**: Texto plano estructurado con secciones en mayúsculas (PERFIL PROFESIONAL, HISTORIAL LABORAL, HABILIDADES CLAVE, EDUCACIÓN), bullets usando "•" para responsabilidades. No inventes empresas ni certificaciones que no se mencionen en el perfil, pero sí adecúa la narrativa técnica a las necesidades del puesto.
+
+Devuelve únicamente el CV completo listo para copiar, sin introducciones ni comentarios adicionales.`;
+
+  try {
+    const cv = await callGemini(prompt);
+    $('cv-text').textContent = cv;
+    $('cv-text').className = 'ai-panel-body';
+    window._lastCV = cv;
+  } catch (e) {
+    $('cv-text').textContent = 'Error: ' + e.message;
+    $('cv-text').className = 'ai-panel-body';
+  }
+};
+
+window.copyCV = () => {
+  if (window._lastCV) { navigator.clipboard.writeText(window._lastCV); alert('CV copiado al portapapeles ✓'); }
+};
+
+// ── SAVE JOB ───────────────────────────────────────────────────────
+window.saveCurrentJob = async () => {
+  const data = window._lastAnalysis;
+  if (!data) { alert('Primero analiza una vacante.'); return; }
+  const job = {
+    company: data.company, title: data.title, jd: data.jd,
+    url: data.url, source: data.source, remote: data.remote,
+    status: 'saved', fit: data.result?.fit || 0,
+    analysis: JSON.stringify(data.result), cv: window._lastCV || '',
+    date: new Date().toISOString()
+  };
+  await saveJob(job);
+  alert('Vacante guardada ✓');
+};
+
+async function saveJob(job) {
+  if (db) {
+    const ref = await addDoc(collection(db, 'jobs'), job);
+    jobs.unshift({ id: ref.id, ...job });
+  } else {
+    job.id = Date.now().toString();
+    jobs.unshift(job);
+    ls('jobs_local', jobs);
+  }
+  renderDashboard();
+}
+
+async function loadJobs() {
+  if (db) {
+    const q = query(collection(db, 'jobs'), orderBy('date', 'desc'));
+    const snap = await getDocs(q);
+    jobs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } else {
+    jobs = ls('jobs_local') || [];
+  }
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────
+function renderDashboard() {
+  const applied = jobs.filter(j => j.status === 'applied').length;
+  const interviewing = jobs.filter(j => j.status === 'interviewing').length;
+  const fits = jobs.filter(j => j.fit).map(j => j.fit);
+  $('s-total').textContent = jobs.length;
+  $('s-applied').textContent = applied;
+  $('s-interview').textContent = interviewing;
+  $('s-fit').textContent = fits.length ? Math.round(fits.reduce((a,b)=>a+b,0)/fits.length) + '%' : '—';
+
+  const list = $('recent-list');
+  if (!jobs.length) { list.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Sin vacantes aún</div><p>Ve a "Analizar vacante" para empezar</p></div>'; return; }
+  list.innerHTML = jobs.slice(0,5).map(j => `
+    <div class="card" onclick="openDetail('${j.id}')" style="cursor:pointer">
+      <div class="card-row">
+        <div><div class="job-title">${j.title}</div><div class="job-company">${j.company} · ${new Date(j.date).toLocaleDateString('es-MX', {day:'numeric',month:'short'})}</div></div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          ${j.fit ? `<span style="font-family:var(--font-head);font-size:15px;font-weight:800;color:${fitColor(j.fit)}">${j.fit}%</span>` : ''}
+          ${statusBadge(j.status)}
+        </div>
+      </div>
+      <div class="card-meta">${remoteLabel(j.remote)} ${j.source ? `<span class="badge badge-gray">${j.source}</span>` : ''}</div>
+    </div>`).join('');
+
+  renderDashboardSkills();
+}
+
+function renderDashboardSkills() {
+  const list = $('dashboard-skills-list');
+  if (!skills.length) {
+    list.innerHTML = `
+      <div class="empty" style="padding: 1.5rem 1rem;">
+        <div style="font-size:24px; margin-bottom:8px; opacity:0.3;">🛠️</div>
+        <div style="font-size:13px; font-weight:600; color:var(--text)">Sin habilidades registradas</div>
+        <p style="font-size:12px; color:var(--muted)">Regístralas en "Mi Trayectoria"</p>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = `
+    <div style="display:flex; flex-wrap:wrap; gap:6px;">
+      ${skills.map(s => {
+        let lvlClass = 'badge-purple';
+        if (s.level === 'Junior') lvlClass = 'badge-gray';
+        if (s.level === 'Mid') lvlClass = 'badge-yellow';
+        if (s.level === 'Experto') lvlClass = 'badge-green';
+        return `<span class="badge ${lvlClass}" style="margin: 2px 0;">${s.name} (${s.level})</span>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderVacantes() {
+  const list = $('vacantes-list');
+  if (!jobs.length) { list.innerHTML = '<div class="empty"><div class="empty-icon">💼</div><div class="empty-title">Sin vacantes guardadas</div><p>Analiza una vacante y guárdala</p></div>'; return; }
+  const visible = jobs.filter(j => j.status !== 'discarded');
+  const disc = jobs.filter(j => j.status === 'discarded');
+  list.innerHTML = [...visible.map(jobCard), disc.length ? `<div class="section-title" style="margin-top:1.5rem">Descartadas (${disc.length})</div>` + disc.map(j => jobCard(j, true)).join('') : ''].join('');
+}
+
+function jobCard(j, muted = false) {
+  return `<div class="card" style="${muted ? 'opacity:0.5;' : ''}cursor:pointer" onclick="openDetail('${j.id}')">
+    <div class="card-row">
+      <div><div class="job-title">${j.title}</div><div class="job-company">${j.company}</div></div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        ${j.fit ? `<span style="font-family:var(--font-head);font-size:18px;font-weight:800;color:${fitColor(j.fit)}">${j.fit}%</span>` : ''}
+        ${statusBadge(j.status)}
+      </div>
+    </div>
+    <div class="card-meta">
+      ${remoteLabel(j.remote)}
+      ${j.source ? `<span class="badge badge-gray">${j.source}</span>` : ''}
+      <span style="font-size:11px;color:var(--muted)">${new Date(j.date).toLocaleDateString('es-MX',{day:'numeric',month:'short'})}</span>
+    </div>
+  </div>`;
+}
+
+// ── DETAIL MODAL ───────────────────────────────────────────────────
+window.openDetail = (id) => {
+  currentJobId = id;
+  const j = jobs.find(x => x.id === id);
+  if (!j) return;
+  $('dm-title').textContent = `${j.title} — ${j.company}`;
+  $('dm-badges').innerHTML = `${statusBadge(j.status)} ${remoteLabel(j.remote)} ${j.source ? `<span class="badge badge-gray">${j.source}</span>` : ''} ${j.fit ? `<span class="badge" style="background:#1a1a2e;color:${fitColor(j.fit)};font-family:var(--font-head)">${j.fit}% fit</span>` : ''}`;
+  $('dm-jd').textContent = j.jd || 'Sin JD guardado.';
+  
+  try { 
+    const r = JSON.parse(j.analysis || '{}'); 
+    let htmlOutput = '';
+    if (r.summary) htmlOutput += `<p><strong>Resumen:</strong> ${r.summary}</p>`;
+    if (r.why_match) htmlOutput += `<p style="margin-top:8px;"><strong style="color:var(--green)">Match:</strong> ${r.why_match}</p>`;
+    if (r.why_no_match) htmlOutput += `<p style="margin-top:8px;"><strong style="color:var(--red)">Brechas:</strong> ${r.why_no_match}</p>`;
+    $('dm-analysis').innerHTML = htmlOutput || j.analysis || '—';
+  } catch { 
+    $('dm-analysis').textContent = j.analysis || '—'; 
+  }
+  
+  $('dm-status').value = j.status || 'saved';
+  $('detail-modal').classList.add('open');
+};
+
+window.closeModal = () => $('detail-modal').classList.remove('open');
+
+window.updateJobStatus = async () => {
+  const j = jobs.find(x => x.id === currentJobId);
+  if (!j) return;
+  j.status = $('dm-status').value;
+  if (db) { await updateDoc(doc(db, 'jobs', currentJobId), { status: j.status }); }
+  else ls('jobs_local', jobs);
+  closeModal(); renderVacantes(); renderDashboard();
+};
+
+window.deleteCurrentJob = async () => {
+  if (!confirm('¿Eliminar esta vacante?')) return;
+  if (db) await deleteDoc(doc(db, 'jobs', currentJobId));
+  jobs = jobs.filter(j => j.id !== currentJobId);
+  if (!db) ls('jobs_local', jobs);
+  closeModal(); renderVacantes(); renderDashboard();
+};
+
+// ── INTERVIEW ──────────────────────────────────────────────────────
+function populateInterviewSelect() {
+  const sel = $('interview-job-select');
+  sel.innerHTML = '<option value="">Selecciona una vacante guardada...</option>';
+  jobs.forEach(j => { const o = document.createElement('option'); o.value = j.id; o.textContent = `${j.title} — ${j.company}`; sel.appendChild(o); });
+}
+
+window.loadInterviewContext = () => {
+  const id = $('interview-job-select').value;
+  if (!id) {
+    $('interview-job-info-card').style.display = 'none';
+    $('interview-placeholder-card').style.display = 'block';
+    return;
+  }
+  interviewContext = jobs.find(j => j.id === id);
+  interviewHistory = [];
+  $('interview-chat').innerHTML = '';
+
+  if (interviewContext) {
+    $('int-job-title').textContent = interviewContext.title;
+    $('int-job-company').textContent = interviewContext.company;
+    
+    try {
+      const analysisObj = JSON.parse(interviewContext.analysis || '{}');
+      $('int-why-match').textContent = analysisObj.why_match || 'Match no detallado.';
+      
+      let tipsStr = '';
+      if (analysisObj.tips) tipsStr += `CONSEJOS:\n${analysisObj.tips}\n\n`;
+      if (analysisObj.entry_strategy) tipsStr += `ESTRATEGIA:\n${analysisObj.entry_strategy}`;
+      $('int-tips').textContent = tipsStr || 'Sin consejos guardados.';
+    } catch(e) {
+      $('int-why-match').textContent = 'Match no detallado.';
+      $('int-tips').textContent = 'Sin consejos guardados.';
+    }
+
+    $('interview-job-info-card').style.display = 'block';
+    $('interview-placeholder-card').style.display = 'none';
+  }
+
+  startInterview();
+};
+
+window.setITab = (tab, el) => {
+  currentITab = tab;
+  document.querySelectorAll('.itab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (interviewContext) { interviewHistory = []; $('interview-chat').innerHTML = ''; startInterview(); }
+};
+
+async function startInterview() {
+  const j = interviewContext;
+  if (!j) return;
+  const tabPrompts = {
+    tech: `Eres un entrevistador técnico. El candidato aplica a "${j.title}" en ${j.company}. JD: ${j.jd}. Empieza con una pregunta técnica clave para este rol. Sé conciso.`,
+    behav: `Eres un entrevistador de RRHH. El candidato aplica a "${j.title}" en ${j.company}. Empieza con una pregunta conductual tipo STAR relevante para este rol.`,
+    hard: `Eres un entrevistador. El candidato aplica a "${j.title}" en ${j.company}. Perfil: experiencia en soporte, QA y desarrollo, busca posición Jr./entry. Empieza con una pregunta difícil típica: ¿por qué aplica a Jr. con su experiencia? ¿Por qué viene de soporte? ¿Cómo justifica el cambio? Sé directo.`,
+    sim: `Eres un entrevistador. Haz una entrevista completa para "${j.title}" en ${j.company}. JD: ${j.jd}. Empieza con una breve presentación del rol y una primera pregunta.`
+  };
+  const sysMsg = { role: 'user', text: tabPrompts[currentITab] };
+  interviewHistory = [sysMsg];
+  addChatMsg('ai', '...');
+  try {
+    const reply = await callGeminiChat(interviewHistory);
+    interviewHistory.push({ role: 'ai', text: reply });
+    const chat = $('interview-chat');
+    chat.lastChild.remove();
+    addChatMsg('ai', reply);
+  } catch(e) { addChatMsg('ai', 'Error: ' + e.message); }
+}
+
+window.sendInterviewMsg = async () => {
+  const input = $('interview-input');
+  const msg = input.value.trim();
+  if (!msg || !interviewContext) return;
+  input.value = '';
+  addChatMsg('user', msg);
+  interviewHistory.push({ role: 'user', text: msg });
+  addChatMsg('ai', '...');
+  try {
+    const reply = await callGeminiChat(interviewHistory);
+    interviewHistory.push({ role: 'ai', text: reply });
+    const chat = $('interview-chat');
+    chat.lastChild.remove();
+    addChatMsg('ai', reply);
+  } catch(e) { const chat = $('interview-chat'); chat.lastChild.remove(); addChatMsg('ai', 'Error: ' + e.message); }
+};
+
+function addChatMsg(role, text) {
+  const chat = $('interview-chat');
+  const el = document.createElement('div');
+  el.className = `msg msg-${role}`;
+  el.textContent = text;
+  chat.appendChild(el);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+window.goToInterview = (tab) => {
+  closeModal();
+  if (tab) { document.querySelectorAll('.itab').forEach((t,i) => { if (['tech','behav','hard','sim'][i] === tab) t.click(); }); }
+  $('interview-job-select').value = currentJobId;
+  showView('interview');
+  loadInterviewContext();
+};
+
+window.prepareInterview = () => {
+  if (window._lastAnalysis) saveCurrentJob().then(() => { $('interview-job-select').value = jobs[0]?.id || ''; showView('interview'); });
+};
+
+// ── TRAJECTORY: SKILLS CRUD ──────────────────────────────────────────
+window.addSkill = () => {
+  const name = $('skill-name-input').value.trim();
+  const level = $('skill-level-input').value;
+  if (!name) return;
+  
+  const nameLower = name.toLowerCase().trim();
+  const existingIdx = skills.findIndex(s => s.name.toLowerCase().trim() === nameLower);
+  
+  if (existingIdx !== -1) {
+    skills[existingIdx].level = level;
+  } else {
+    skills.push({ name: name, level: level });
+  }
+  
+  $('skill-name-input').value = '';
+  saveSkills();
+  renderSkills();
+  renderDashboardSkills();
+};
+
+window.deleteSkill = (name) => {
+  const nameLower = name.toLowerCase().trim();
+  skills = skills.filter(s => s.name.toLowerCase().trim() !== nameLower);
+  saveSkills();
+  renderSkills();
+  renderDashboardSkills();
+};
+
+function renderSkills() {
+  const list = $('skills-list');
+  if (!skills.length) {
+    list.innerHTML = '<div class="empty" style="padding:2rem 1rem;"><div style="font-size:24px; margin-bottom:8px; opacity:0.3;">🛠️</div><div style="font-size:13px; font-weight:600; color:var(--text)">Sin habilidades aún</div><p style="font-size:12px; color:var(--muted)">Usa el formulario superior para agregarlas</p></div>';
+    return;
+  }
+  
+  list.innerHTML = skills.map(s => {
+    let lvlBadgeColor = 'badge-purple';
+    if (s.level === 'Junior') lvlBadgeColor = 'badge-gray';
+    if (s.level === 'Mid') lvlBadgeColor = 'badge-yellow';
+    if (s.level === 'Senior') lvlBadgeColor = 'badge-purple';
+    if (s.level === 'Experto') lvlBadgeColor = 'badge-green';
+
+    return `
+      <div class="skill-card-item">
+        <span class="skill-card-name">${s.name}</span>
+        <div class="skill-card-actions">
+          <span class="badge ${lvlBadgeColor}">${s.level}</span>
+          <button class="btn-ghost btn-sm" onclick="deleteSkill('${s.name}')" style="padding: 2px 6px; color:var(--red); font-size:14px; font-weight:bold;">✕</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── TRAJECTORY: EXPERIENCE CRUD ──────────────────────────────────────
+window.saveExperience = () => {
+  const id = $('exp-id').value;
+  const company = $('exp-company').value.trim();
+  const role = $('exp-role').value.trim();
+  const date = $('exp-date').value.trim();
+  const desc = $('exp-desc').value.trim();
+  
+  if (!company || !role || !desc) {
+    alert('Completa los campos de Empresa, Rol y Descripción/Logros.');
+    return;
+  }
+  
+  if (id) {
+    const idx = experience.findIndex(e => e.id === id);
+    if (idx !== -1) {
+      experience[idx] = { id, company, role, date, desc };
+    }
+  } else {
+    const newExp = {
+      id: Date.now().toString(),
+      company,
+      role,
+      date,
+      desc
+    };
+    experience.unshift(newExp);
+  }
+  
+  clearExperienceForm();
+  saveExperienceData();
+  renderExperience();
+};
+
+window.editExperience = (id) => {
+  const exp = experience.find(e => e.id === id);
+  if (!exp) return;
+  
+  $('exp-id').value = exp.id;
+  $('exp-company').value = exp.company;
+  $('exp-role').value = exp.role;
+  $('exp-date').value = exp.date;
+  $('exp-desc').value = exp.desc;
+  
+  $('exp-company').focus();
+};
+
+window.deleteExperience = (id) => {
+  if (!confirm('¿Eliminar este puesto de trabajo anterior?')) return;
+  experience = experience.filter(e => e.id !== id);
+  saveExperienceData();
+  renderExperience();
+};
+
+window.clearExperienceForm = () => {
+  $('exp-id').value = '';
+  $('exp-company').value = '';
+  $('exp-role').value = '';
+  $('exp-date').value = '';
+  $('exp-desc').value = '';
+};
+
+function renderExperience() {
+  const list = $('experience-list');
+  if (!experience.length) {
+    list.innerHTML = '<div class="empty" style="padding:2rem 1rem;"><div style="font-size:24px; margin-bottom:8px; opacity:0.3;">💼</div><div style="font-size:13px; font-weight:600; color:var(--text)">Sin historial laboral registrado</div><p style="font-size:12px; color:var(--muted)">Registra tus trabajos anteriores arriba.</p></div>';
+    return;
+  }
+  
+  list.innerHTML = experience.map(e => `
+    <div class="exp-item">
+      <div class="exp-item-header">
+        <div>
+          <div class="exp-item-title">${e.role}</div>
+          <div class="exp-item-company">${e.company}</div>
+        </div>
+        <div class="exp-item-date">${e.date}</div>
+      </div>
+      <div class="exp-item-desc">${e.desc}</div>
+      <div class="exp-item-actions">
+        <button class="btn-ghost btn-sm" onclick="editExperience('${e.id}')">Editar</button>
+        <button class="btn-danger btn-sm" onclick="deleteExperience('${e.id}')">Eliminar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.clearAnalyzeForm = () => {
+  ['a-company','a-title','a-jd','a-url'].forEach(id => $(id).value = '');
+  $('a-source').value = ''; $('a-remote').value = 'unknown';
+  $('analysis-output').style.display = 'none';
+  $('analysis-placeholder').style.display = 'block';
+  window._lastAnalysis = null; window._lastCV = null;
+};
+
+// ── SETUP ──────────────────────────────────────────────────────────
+window.saveGeminiKey = async () => {
+  const key = $('gemini-key-input').value.trim();
+  if (!key) return;
+  ls('gemini_key', key);
+  $('gemini-key-input').value = '';
+  try {
+    const test = await callGemini('Di solo "ok"');
+    if (test) { $('gemini-dot').className = 'status-dot ok'; $('gemini-status-text').textContent = 'Conectada y funcionando ✓'; }
+  } catch(e) { $('gemini-status-text').textContent = 'Key inválida: ' + e.message; }
+};
+
+window.saveFirebaseConfig = () => {
+  const cfg = { apiKey: $('fb-apikey').value.trim(), authDomain: $('fb-authdomain').value.trim(), projectId: $('fb-projectid').value.trim() };
+  if (!cfg.apiKey || !cfg.projectId) return;
+  ls('firebase_config', cfg);
+  initFirebase(cfg);
+};
+
+window.testFirebase = async () => {
+  if (!db) { alert('Configura Firebase primero.'); return; }
+  try { await getDocs(collection(db, 'jobs')); $('firebase-dot').className = 'status-dot ok'; $('firebase-status-text').textContent = 'Conectado a Firestore ✓'; } catch(e) { $('firebase-status-text').textContent = 'Error: ' + e.message; }
+};
+
+function initFirebase(cfg) {
+  try {
+    if (fbApp) return;
+    fbApp = initializeApp(cfg);
+    db = getFirestore(fbApp);
+    $('firebase-dot').className = 'status-dot ok';
+    $('firebase-status-text').textContent = 'Firebase inicializado ✓';
+    loadJobs().then(renderDashboard);
+  } catch(e) { $('firebase-status-text').textContent = 'Error: ' + e.message; }
+}
+
+window.saveProfile = () => {
+  const activeView = document.querySelector('.view.active');
+  let name, email, location, remote, notes;
+  
+  if (activeView) {
+    const nameInput = activeView.querySelector('#profile-name');
+    const emailInput = activeView.querySelector('#profile-email');
+    const locInput = activeView.querySelector('#profile-location');
+    const remSelect = activeView.querySelector('#profile-remote');
+    const notesTxt = activeView.querySelector('#profile-notes');
+    
+    if (nameInput) name = nameInput.value.trim();
+    if (emailInput) email = emailInput.value.trim();
+    if (locInput) location = locInput.value.trim();
+    if (remSelect) remote = remSelect.value;
+    if (notesTxt) notes = notesTxt.value.trim();
+  }
+  
+  if (!name) name = $('profile-name').value;
+  if (!email) email = $('profile-email').value;
+  if (!location) location = $('profile-location').value;
+  if (!remote) remote = $('profile-remote').value;
+  if (!notes) notes = $('profile-notes').value;
+
+  const profObj = { name, email, location, remote, notes };
+  ls('user_profile', profObj);
+  ls('profile_remote', remote);
+  
+  document.querySelectorAll('[id="profile-name"]').forEach(el => el.value = name || '');
+  document.querySelectorAll('[id="profile-email"]').forEach(el => el.value = email || '');
+  document.querySelectorAll('[id="profile-location"]').forEach(el => el.value = location || '');
+  document.querySelectorAll('[id="profile-remote"]').forEach(el => el.value = remote || 'yes');
+  document.querySelectorAll('[id="profile-notes"]').forEach(el => el.value = notes || '');
+
+  alert('Perfil guardado ✓');
+};
+
+function loadSetupFields() {
+  const p = ls('user_profile') || {};
+  
+  document.querySelectorAll('[id="profile-name"]').forEach(el => el.value = p.name || '');
+  document.querySelectorAll('[id="profile-email"]').forEach(el => el.value = p.email || '');
+  document.querySelectorAll('[id="profile-location"]').forEach(el => el.value = p.location || '');
+  document.querySelectorAll('[id="profile-remote"]').forEach(el => el.value = p.remote || 'yes');
+  document.querySelectorAll('[id="profile-notes"]').forEach(el => el.value = p.notes || '');
+
+  const gkey = ls('gemini_key');
+  if (gkey) { $('gemini-dot').className = 'status-dot ok'; $('gemini-status-text').textContent = 'Key configurada ✓'; }
+  const fbcfg = ls('firebase_config');
+  if (fbcfg) { $('fb-apikey').value = fbcfg.apiKey || ''; $('fb-authdomain').value = fbcfg.authDomain || ''; $('fb-projectid').value = fbcfg.projectId || ''; }
+}
+
+// ── INIT ───────────────────────────────────────────────────────────
+(async () => {
+  loadSkills();
+  loadExperience();
+  renderDashboardSkills();
+  
+  const fbcfg = ls('firebase_config');
+  if (fbcfg?.apiKey && fbcfg?.projectId) initFirebase(fbcfg);
+  else { jobs = ls('jobs_local') || []; renderDashboard(); }
+})();
+</script>
+</body>
+</html>
