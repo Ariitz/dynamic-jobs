@@ -1470,7 +1470,10 @@ window.saveGeminiKey = async () => {
   try {
     const test = await callGemini('Di solo "ok"');
     if (test) { $('gemini-dot').className = 'status-dot ok'; $('gemini-status-text').textContent = 'Conectada y funcionando ✓'; }
-  } catch(e) { $('gemini-status-text').textContent = 'Key inválida: ' + e.message; }
+  } catch(e) { 
+    $('gemini-dot').className = 'status-dot';
+    $('gemini-status-text').textContent = 'Key inválida: ' + e.message; 
+  }
 };
 
 window.saveFirebaseConfig = () => {
