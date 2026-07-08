@@ -1270,7 +1270,7 @@
       <div id="view-vacantes" class="view">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.75rem">
           <div>
-            <div class="page-title">Mis vacantes 1</div>
+            <div class="page-title">Mis vacantes 2</div>
             <div class="page-sub">Todas las posiciones que estás siguiendo</div>
           </div>
           <button class="btn" onclick="showView('analyze')">+ Agregar</button>
@@ -1672,10 +1672,9 @@
         };
 
         try {
-          return await tryOpenRouterModel('google/gemini-2.5-flash:free');
+          return await tryOpenRouterModel('openrouter/free');
         } catch (err) {
-          console.warn('OpenRouter Gemini Free sin cuota, probando Llama 3...');
-          return await tryOpenRouterModel('meta-llama/llama-3-8b-instruct:free');
+          throw err;
         }
       } else {
         const tryModel = async (modelName) => {
@@ -1695,9 +1694,13 @@
         try {
           return await tryModel('gemini-2.0-flash');
         } catch (err) {
-          if (err.message.includes('Quota exceeded') || err.message.includes('limit: 0') || err.message.includes('quota')) {
-            console.warn('Gemini 2.0 Flash sin cuota. Probando fallback con Gemini 1.5 Flash...');
-            return await tryModel('gemini-1.5-flash');
+          if (err.message.includes('Quota exceeded') || err.message.includes('limit: 0') || err.message.includes('quota') || err.message.includes('not found') || err.message.includes('not supported')) {
+            console.warn('Gemini 2.0 Flash sin cuota o no encontrado. Probando fallback con Gemini 1.5 Flash...');
+            try {
+              return await tryModel('gemini-1.5-flash');
+            } catch (fallbackErr) {
+              throw new Error(`${fallbackErr.message}. (Consejo: Si sigues con este error de cuota o modelo en Gemini, cambia el Proveedor a "OpenRouter" en Configuración para usar la IA de forma gratuita y sin límites).`);
+            }
           }
           throw err;
         }
@@ -1737,10 +1740,9 @@
         };
 
         try {
-          return await tryOpenRouterChatModel('google/gemini-2.5-flash:free');
+          return await tryOpenRouterChatModel('openrouter/free');
         } catch (err) {
-          console.warn('OpenRouter Gemini Free sin cuota de chat, probando Llama 3...');
-          return await tryOpenRouterChatModel('meta-llama/llama-3-8b-instruct:free');
+          throw err;
         }
       } else {
         const tryChatModel = async (modelName) => {
@@ -1761,9 +1763,13 @@
         try {
           return await tryChatModel('gemini-2.0-flash');
         } catch (err) {
-          if (err.message.includes('Quota exceeded') || err.message.includes('limit: 0') || err.message.includes('quota')) {
-            console.warn('Gemini 2.0 Flash sin cuota de chat. Probando fallback con Gemini 1.5 Flash...');
-            return await tryChatModel('gemini-1.5-flash');
+          if (err.message.includes('Quota exceeded') || err.message.includes('limit: 0') || err.message.includes('quota') || err.message.includes('not found') || err.message.includes('not supported')) {
+            console.warn('Gemini 2.0 Flash sin cuota de chat o no encontrado. Probando fallback con Gemini 1.5 Flash...');
+            try {
+              return await tryChatModel('gemini-1.5-flash');
+            } catch (fallbackErr) {
+              throw new Error(`${fallbackErr.message}. (Consejo: Cambia el Proveedor a "OpenRouter" en Configuración para usar la IA gratis y sin límites).`);
+            }
           }
           throw err;
         }
