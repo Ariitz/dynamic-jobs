@@ -1545,7 +1545,7 @@
       <div class="divider"></div>
       <div class="section-title">Preparar entrevista</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-sm" onclick="goToInterview()">Simular entrevista ✦</button>
+        <button class="btn btn-sm" onclick="goToInterview('sim')">Simular entrevista ✦</button>
         <button class="btn-outline btn-sm" onclick="goToInterview('hard')">Preguntas difíciles</button>
       </div>
       <div class="modal-actions">
@@ -2203,7 +2203,7 @@ Devuelve únicamente el CV completo listo para copiar, sin introducciones ni com
       jobs.forEach(j => { const o = document.createElement('option'); o.value = j.id; o.textContent = `${j.title} — ${j.company}`; sel.appendChild(o); });
     }
 
-    window.loadInterviewContext = () => {
+    window.loadInterviewContext = (preventStart = false) => {
       const id = $('interview-job-select').value;
       if (!id) {
         $('interview-job-info-card').style.display = 'none';
@@ -2235,7 +2235,9 @@ Devuelve únicamente el CV completo listo para copiar, sin introducciones ni com
         $('interview-placeholder-card').style.display = 'none';
       }
 
-      startInterview();
+      if (!preventStart) {
+        startInterview();
+      }
     };
 
     window.setITab = (tab, el) => {
@@ -2294,10 +2296,17 @@ Devuelve únicamente el CV completo listo para copiar, sin introducciones ni com
 
     window.goToInterview = (tab) => {
       closeModal();
-      if (tab) { document.querySelectorAll('.itab').forEach((t, i) => { if (['tech', 'behav', 'hard', 'sim'][i] === tab) t.click(); }); }
       $('interview-job-select').value = currentJobId;
+      loadInterviewContext(true); // Carga detalles sin disparar doble inicio
       showView('interview');
-      loadInterviewContext();
+
+      // Seleccionar la pestaña correcta, lo cual iniciará la entrevista una sola vez
+      const activeTab = tab || 'sim'; // Por defecto simulacro si no se especifica
+      document.querySelectorAll('.itab').forEach((t, i) => {
+        if (['tech', 'behav', 'hard', 'sim'][i] === activeTab) {
+          t.click();
+        }
+      });
     };
 
     window.prepareInterview = () => {
