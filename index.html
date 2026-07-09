@@ -1837,7 +1837,14 @@ Responde OBLIGATORIAMENTE en este formato JSON puro, sin bloques markdown de tri
 
       try {
         const raw = await callGemini(prompt);
-        const clean = raw.replace(/```json|```/g, '').trim();
+        // Extracción robusta de JSON (buscar el primer '{' y el último '}')
+        const jsonStart = raw.indexOf('{');
+        const jsonEnd = raw.lastIndexOf('}');
+        let clean = raw;
+        if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+          clean = raw.substring(jsonStart, jsonEnd + 1);
+        }
+        clean = clean.replace(/```json|```/g, '').trim();
         const result = JSON.parse(clean);
         window._lastAnalysis = { company, title, jd, url: $('a-url').value.trim(), source: $('a-source').value, remote: remoteVal, result };
 
