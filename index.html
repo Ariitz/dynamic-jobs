@@ -1066,7 +1066,7 @@
           <circle cx="12" cy="12" r="3" />
           <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
         </svg>
-        Configuración Prueba
+        Configuración
       </button>
     </nav>
 
@@ -1270,7 +1270,7 @@
       <div id="view-vacantes" class="view">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.75rem">
           <div>
-            <div class="page-title">Mis vacantes 3</div>
+            <div class="page-title">Mis vacantes</div>
             <div class="page-sub">Todas las posiciones que estás siguiendo</div>
           </div>
           <button class="btn" onclick="showView('analyze')">+ Agregar</button>
@@ -1564,7 +1564,7 @@
   <!-- ── SCRIPTS ────────────────────────────────────────────────────── -->
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
     // ── STATE ──────────────────────────────────────────────────────────
     let jobs = [];
@@ -1599,6 +1599,9 @@
 
     function saveSkills() {
       ls('user_skills', skills);
+      if (db) {
+        setDoc(doc(db, 'config', 'skills'), { list: skills }).catch(e => console.error('Error saving skills:', e));
+      }
     }
 
     function loadExperience() {
@@ -1607,6 +1610,9 @@
 
     function saveExperienceData() {
       ls('user_experience', experience);
+      if (db) {
+        setDoc(doc(db, 'config', 'experience'), { list: experience }).catch(e => console.error('Error saving experience:', e));
+      }
     }
 
     function remoteLabel(r) {
@@ -2528,8 +2534,52 @@ Devuelve únicamente el CV completo listo para copiar, sin introducciones ni com
         db = getFirestore(fbApp);
         $('firebase-dot').className = 'status-dot ok';
         $('firebase-status-text').textContent = 'Firebase inicializado ✓';
-        loadJobs().then(renderDashboard);
+        loadAllDataFromFirestore();
       } catch (e) { $('firebase-status-text').textContent = 'Error: ' + e.message; }
+    }
+
+    async function loadAllDataFromFirestore() {
+      if (!db) return;
+      try {
+        // 1. Cargar Jobs
+        const q = query(collection(db, 'jobs'), orderBy('date', 'desc'));
+        const snap = await getDocs(q);
+        jobs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderDashboard();
+
+        // 2. Cargar Perfil
+        const profileDoc = await getDoc(doc(db, 'config', 'profile'));
+        if (profileDoc.exists()) {
+          const p = profileDoc.data();
+          ls('user_profile', p);
+          ls('profile_remote', p.remote || 'yes');
+        }
+
+        // 3. Cargar Skills
+        const skillsDoc = await getDoc(doc(db, 'config', 'skills'));
+        if (skillsDoc.exists()) {
+          skills = skillsDoc.data().list || [];
+          ls('user_skills', skills);
+        } else {
+          skills = ls('user_skills') || [];
+        }
+        renderSkills();
+        renderDashboardSkills();
+
+        // 4. Cargar Experiencia
+        const expDoc = await getDoc(doc(db, 'config', 'experience'));
+        if (expDoc.exists()) {
+          experience = expDoc.data().list || [];
+          ls('user_experience', experience);
+        } else {
+          experience = ls('user_experience') || [];
+        }
+        renderExperience();
+
+        loadSetupFields();
+      } catch (e) {
+        console.error('Error al cargar datos desde Firestore:', e);
+      }
     }
 
     window.saveProfile = () => {
@@ -2566,7 +2616,16 @@ Devuelve únicamente el CV completo listo para copiar, sin introducciones ni com
       document.querySelectorAll('[id="profile-remote"]').forEach(el => el.value = remote || 'yes');
       document.querySelectorAll('[id="profile-notes"]').forEach(el => el.value = notes || '');
 
-      alert('Perfil guardado ✓');
+      if (db) {
+        setDoc(doc(db, 'config', 'profile'), profObj)
+          .then(() => alert('Perfil guardado en la nube ✓'))
+          .catch(e => {
+            console.error('Error al guardar perfil en Firestore:', e);
+            alert('Perfil guardado localmente ✓');
+          });
+      } else {
+        alert('Perfil guardado localmente ✓');
+      }
     };
 
     function loadSetupFields() {
@@ -2588,13 +2647,19 @@ Devuelve únicamente el CV completo listo para copiar, sin introducciones ni com
 
     // ── INIT ───────────────────────────────────────────────────────────
     (async () => {
-      loadSkills();
-      loadExperience();
-      renderDashboardSkills();
-
       const fbcfg = ls('firebase_config');
-      if (fbcfg?.apiKey && fbcfg?.projectId) initFirebase(fbcfg);
-      else { jobs = ls('jobs_local') || []; renderDashboard(); }
+      if (fbcfg?.apiKey && fbcfg?.projectId) {
+        initFirebase(fbcfg);
+      } else {
+        loadSkills();
+        loadExperience();
+        renderSkills();
+        renderExperience();
+        renderDashboardSkills();
+        jobs = ls('jobs_local') || [];
+        renderDashboard();
+        loadSetupFields();
+      }
     })();
   </script>
 </body>
