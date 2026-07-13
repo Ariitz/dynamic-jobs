@@ -452,6 +452,29 @@
       border: 1px solid var(--border);
     }
 
+    select.badge-select {
+      appearance: none;
+      -webkit-appearance: none;
+      outline: none;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      padding: 2px 10px;
+      border-radius: 99px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    select.badge-select:hover {
+      filter: brightness(1.2);
+    }
+    select.badge-select option {
+      background: var(--surface2);
+      color: var(--text);
+    }
+
     .badge-applied {
       background: rgba(59, 130, 246, 0.15);
       color: #60A5FA;
@@ -2348,6 +2371,17 @@ Devuelve únicamente el CV completo listo para copiar, sin introducciones ni com
       renderDashboardSkills();
     };
 
+    window.updateSkillLevel = (name, newLevel) => {
+      const nameLower = name.toLowerCase().trim();
+      const existingIdx = skills.findIndex(s => s.name.toLowerCase().trim() === nameLower);
+      if (existingIdx !== -1) {
+        skills[existingIdx].level = newLevel;
+        saveSkills();
+        renderSkills();
+        renderDashboardSkills();
+      }
+    };
+
     function renderSkills() {
       const list = $('skills-list');
       if (!skills.length) {
@@ -2365,8 +2399,13 @@ Devuelve únicamente el CV completo listo para copiar, sin introducciones ni com
         return `
       <div class="skill-card-item">
         <span class="skill-card-name">${s.name}</span>
-        <div class="skill-card-actions">
-          <span class="badge ${lvlBadgeColor}">${s.level}</span>
+        <div class="skill-card-actions" style="display:flex; align-items:center; gap:8px;">
+          <select class="badge-select ${lvlBadgeColor}" onchange="updateSkillLevel('${s.name}', this.value)" style="border:none;">
+            <option value="Junior" ${s.level === 'Junior' ? 'selected' : ''}>Junior</option>
+            <option value="Mid" ${s.level === 'Mid' ? 'selected' : ''}>Mid</option>
+            <option value="Senior" ${s.level === 'Senior' ? 'selected' : ''}>Senior</option>
+            <option value="Experto" ${s.level === 'Experto' ? 'selected' : ''}>Experto</option>
+          </select>
           <button class="btn-ghost btn-sm" onclick="deleteSkill('${s.name}')" style="padding: 2px 6px; color:var(--red); font-size:14px; font-weight:bold;">✕</button>
         </div>
       </div>
