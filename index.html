@@ -2597,6 +2597,11 @@ Devuelve únicamente el CV completo listo para copiar, sin introducciones ni com
           const p = profileDoc.data();
           ls('user_profile', p);
           ls('profile_remote', p.remote || 'yes');
+        } else {
+          const p = ls('user_profile');
+          if (p && Object.keys(p).length > 0) {
+            setDoc(doc(db, 'config', 'profile'), p).catch(e => console.error(e));
+          }
         }
 
         // 3. Cargar Skills
@@ -2606,6 +2611,9 @@ Devuelve únicamente el CV completo listo para copiar, sin introducciones ni com
           ls('user_skills', skills);
         } else {
           skills = ls('user_skills') || [];
+          if (skills.length > 0) {
+            setDoc(doc(db, 'config', 'skills'), { list: skills }).catch(e => console.error(e));
+          }
         }
         renderSkills();
         renderDashboardSkills();
@@ -2617,6 +2625,9 @@ Devuelve únicamente el CV completo listo para copiar, sin introducciones ni com
           ls('user_experience', experience);
         } else {
           experience = ls('user_experience') || [];
+          if (experience.length > 0) {
+            setDoc(doc(db, 'config', 'experience'), { list: experience }).catch(e => console.error(e));
+          }
         }
         renderExperience();
 
