@@ -1855,23 +1855,25 @@ ${skillsText || 'Ninguna registrada'}
 - Historial Laboral:
 ${expText || 'Ninguno registrado'}
 
-Responde OBLIGATORIAMENTE en este formato JSON puro, sin bloques markdown de triple comilla (no uses \`\`\`json ni \`\`\`) ni explicaciones adicionales, comenzando con { y terminando con }:
+INSTRUCCIONES DE FORMATO:
+Responde ÚNICAMENTE con un objeto JSON válido. No uses bloques markdown (no envuelvas el resultado en \`\`\`json ni \`\`\`), no incluyas textos explicativos, saludos ni notas. Las claves deben estar escritas exactamente en inglés y los valores en español (a menos que se especifique otra cosa).
+
+Formato de respuesta esperado (debe ser JSON parseable directamente):
 {
-  "fit": <número 0-100>,
-  "remote_ok": <true | false | null>,
-  "why_match": "<Explicación de por qué el candidato sí encaja en el rol con base en su historial y habilidades>",
-  "why_no_match": "<Explicación de brechas, debilidades o por qué no hace match completo>",
+  "fit": 75,
+  "remote_ok": true,
+  "why_match": "Explicación detallada de por qué el candidato hace match con base en sus habilidades y trayectoria",
+  "why_no_match": "Explicación detallada de brechas o puntos donde no hay un encaje completo",
   "skills_to_improve": [
-    { "name": "Nombre de la skill", "reason": "Motivo de por qué mejorarla o estudiarla para este rol" }
+    { "name": "Habilidad a mejorar", "reason": "Razón de por qué es importante mejorarla para este rol" }
   ],
   "required_skills": [
-    { "name": "Skill Requerida 1", "importance": "high" },
-    { "name": "Skill Requerida 2", "importance": "medium" }
+    { "name": "Habilidad requerida por la vacante", "importance": "high" }
   ],
-  "summary": "<Resumen general de 2-3 oraciones sobre el match>",
-  "recommendation": "<APLICAR | APLICAR CON PRECAUCIÓN | NO APLICAR>",
-  "tips": "<3-5 consejos concretos para destacar en la aplicación>",
-  "entry_strategy": "<Estrategia para destacar o mitigar brechas>"
+  "summary": "Resumen general de 2 o 3 oraciones sobre la compatibilidad",
+  "recommendation": "APLICAR",
+  "tips": "3 a 5 consejos concretos para destacar en la aplicación",
+  "entry_strategy": "Estrategia sugerida para mitigar brechas"
 }`;
 
       try {
