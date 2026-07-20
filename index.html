@@ -1857,7 +1857,8 @@ ${skillsText || 'Ninguna registrada'}
 ${expText || 'Ninguno registrado'}
 
 INSTRUCCIONES DE FORMATO:
-Responde ÚNICAMENTE con un objeto JSON válido. No uses bloques markdown (no envuelvas el resultado en \`\`\`json ni \`\`\`), no incluyas textos explicativos, saludos ni notas. Las claves deben estar escritas exactamente en inglés y los valores en español (a menos que se especifique otra cosa).
+Responde ÚNICAMENTE con un objeto JSON válido. No uses bloques markdown (no envuelvas el resultado en \`\`\`json ni \`\`\`), no incluyas textos explicativos, saludos ni notas. Las claves deben estar escritas exactamente en inglés y los valores en español.
+REGLA CRÍTICA DE COMILLAS: NUNCA uses comillas dobles (") dentro de los textos o explicaciones. Si necesitas citar alguna frase del JD o destacar términos (por ejemplo 'school of excellence' o 'STLC'), usa SIEMPRE comillas simples (') para evitar errores de sintaxis JSON.
 
 Formato de respuesta esperado (debe ser JSON parseable directamente):
 {
@@ -1887,7 +1888,21 @@ Formato de respuesta esperado (debe ser JSON parseable directamente):
           clean = raw.substring(jsonStart, jsonEnd + 1);
         }
         clean = clean.replace(/```json|```/g, '').trim();
-        const result = JSON.parse(clean);
+        
+        let result;
+        try {
+          result = JSON.parse(clean);
+        } catch (parseErr) {
+          console.warn('Primer intento de parseo JSON falló. Aplicando sanitizador de comillas interiores...');
+          try {
+            const sanitized = clean
+              .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
+              .replace(/(?<=\s"[^"]*)"([^",:\}\]\s]+)"(?=[^"]*")/g, "'$1'");
+            result = JSON.parse(sanitized);
+          } catch (e2) {
+            throw parseErr;
+          }
+        }
         window._lastAnalysis = { company, title, jd, url: $('a-url').value.trim(), source: $('a-source').value, remote: remoteVal, result };
 
         const fit = result.fit || 0;
