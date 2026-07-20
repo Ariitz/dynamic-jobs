@@ -1589,6 +1589,7 @@
           <option value="discarded">Descartada</option>
         </select>
         <button class="btn-outline btn-sm" onclick="updateJobStatus()">Actualizar estado</button>
+        <span id="dm-link-btn"></span>
         <button class="btn-danger btn-sm" onclick="deleteCurrentJob()">Eliminar</button>
       </div>
     </div>
@@ -2137,7 +2138,11 @@ Devuelve únicamente el CV completo listo para copiar, sin introducciones ni com
           ${statusBadge(j.status)}
         </div>
       </div>
-      <div class="card-meta">${remoteLabel(j.remote)} ${j.source ? `<span class="badge badge-gray">${j.source}</span>` : ''}</div>
+      <div class="card-meta">
+        ${remoteLabel(j.remote)}
+        ${j.source ? `<span class="badge badge-gray">${j.source}</span>` : ''}
+        ${j.url ? `<a href="${j.url}" target="_blank" onclick="event.stopPropagation()" class="btn-ghost btn-sm" style="margin-left:auto; text-decoration:none; display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:2px 8px; color:var(--accent2); background:rgba(99,102,241,0.12); border-radius:6px; font-weight:600;">🔗 Ir a la posición ↗</a>` : ''}
+      </div>
     </div>`).join('');
 
       renderDashboardSkills();
@@ -2190,6 +2195,7 @@ Devuelve únicamente el CV completo listo para copiar, sin introducciones ni com
       ${remoteLabel(j.remote)}
       ${j.source ? `<span class="badge badge-gray">${j.source}</span>` : ''}
       <span style="font-size:11px;color:var(--muted)">${new Date(j.date).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}</span>
+      ${j.url ? `<a href="${j.url}" target="_blank" onclick="event.stopPropagation()" class="btn-ghost btn-sm" style="margin-left:auto; text-decoration:none; display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:2px 8px; color:var(--accent2); background:rgba(99,102,241,0.12); border-radius:6px; font-weight:600;">🔗 Ir a la posición ↗</a>` : ''}
     </div>
   </div>`;
     }
@@ -2200,7 +2206,10 @@ Devuelve únicamente el CV completo listo para copiar, sin introducciones ni com
       const j = jobs.find(x => x.id === id);
       if (!j) return;
       $('dm-title').textContent = `${j.title} — ${j.company}`;
-      $('dm-badges').innerHTML = `${statusBadge(j.status)} ${remoteLabel(j.remote)} ${j.source ? `<span class="badge badge-gray">${j.source}</span>` : ''} ${j.fit ? `<span class="badge" style="background:#1a1a2e;color:${fitColor(j.fit)};font-family:var(--font-head)">${j.fit}% fit</span>` : ''}`;
+      $('dm-badges').innerHTML = `${statusBadge(j.status)} ${remoteLabel(j.remote)} ${j.source ? `<span class="badge badge-gray">${j.source}</span>` : ''} ${j.fit ? `<span class="badge" style="background:#1a1a2e;color:${fitColor(j.fit)};font-family:var(--font-head)">${j.fit}% fit</span>` : ''} ${j.url ? `<a href="${j.url}" target="_blank" class="badge" style="text-decoration:none;background:rgba(99,102,241,0.2);color:var(--accent2);border:1px solid rgba(99,102,241,0.4);font-weight:600;">🔗 Abrir vacante ↗</a>` : ''}`;
+      if ($('dm-link-btn')) {
+        $('dm-link-btn').innerHTML = j.url ? `<a href="${j.url}" target="_blank" class="btn btn-sm" style="text-decoration:none; display:inline-flex; align-items:center; gap:4px;">🔗 Ir a la posición ↗</a>` : '';
+      }
       $('dm-jd').textContent = j.jd || 'Sin JD guardado.';
 
       try {
