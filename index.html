@@ -2097,17 +2097,56 @@ Devuelve únicamente el CV completo listo para copiar, sin introducciones ni com
 
     // ── SAVE JOB ───────────────────────────────────────────────────────
     window.saveCurrentJob = async () => {
-      const data = window._lastAnalysis;
-      if (!data) { alert('Primero analiza una vacante.'); return; }
-      const job = {
-        company: data.company, title: data.title, jd: data.jd,
-        url: data.url, source: data.source, remote: data.remote,
-        status: 'saved', fit: data.result?.fit || 0,
-        analysis: JSON.stringify(data.result), cv: window._lastCV || '',
-        date: new Date().toISOString()
-      };
-      await saveJob(job);
-      alert('Vacante guardada ✓');
+      try {
+        const data = window._lastAnalysis;
+        if (!data) { alert('Primero analiza una vacante.'); return; }
+        
+        // Verificar si la vacante ya existe en la lista de trabajos
+        const existingJob = jobs.find(j => 
+          j.company.toLowerCase().trim() === data.company.toLowerCase().trim() && 
+          j.title.toLowerCase().trim() === data.title.toLowerCase().trim()
+        );
+
+        if (existingJob) {
+          existingJob.cv = window._lastCV || '';
+          existingJob.analysis = JSON.stringify(data.result);
+          existingJob.fit = data.result?.fit || 0;
+          existingJob.remote = data.remote;
+          existingJob.source = data.source;
+          existingJob.url = data.url;
+          existingJob.date = new Date().toISOString();
+          
+          if (db) {
+            await updateDoc(doc(db, 'jobs', existingJob.id), {
+              cv: existingJob.cv,
+              analysis: existingJob.analysis,
+              fit: existingJob.fit,
+              remote: existingJob.remote,
+              source: existingJob.source,
+              url: existingJob.url,
+              date: existingJob.date
+            });
+          } else {
+            ls('jobs_local', jobs);
+          }
+          renderDashboard();
+          alert('Vacante actualizada con el CV ✓');
+        } else {
+          const job = {
+            company: data.company, title: data.title, jd: data.jd,
+            url: data.url, source: data.source, remote: data.remote,
+            status: 'saved', fit: data.result?.fit || 0,
+            analysis: JSON.stringify(data.result), cv: window._lastCV || '',
+            date: new Date().toISOString()
+          };
+          await saveJob(job);
+          alert('Vacante guardada ✓');
+        }
+      } catch (err) {
+        console.error('Error al guardar/actualizar la vacante:', err);
+        alert('Error al guardar la vacante: ' + err.message);
+        throw err;
+      }
     };
 
     async function saveJob(job) {
@@ -2375,7 +2414,32 @@ Devuelve únicamente el CV completo listo para copiar, sin introducciones ni com
     };
 
     window.prepareInterview = () => {
-      if (window._lastAnalysis) saveCurrentJob().then(() => { $('interview-job-select').value = jobs[0]?.id || ''; showView('interview'); });
+      if (window._lastAnalysis) {
+        saveCurrentJob().then(() => {
+          const data = window._lastAnalysis;
+          if (!data) return;
+          const targetJob = jobs.find(j => 
+            j.company.toLowerCase().trim() === data.company.toLowerCase().trim() && 
+            j.title.toLowerCase().trim() === data.title.toLowerCase().trim()
+          );
+          const jobId = targetJob?.id || jobs[0]?.id || '';
+          if (jobId) {
+            $('interview-job-select').value = jobId;
+            loadInterviewContext(true);
+            showView('interview');
+            // Activar la pestaña del simulacro para iniciar la entrevista
+            document.querySelectorAll('.itab').forEach((t, i) => {
+              if (['tech', 'behav', 'hard', 'sim'][i] === 'sim') {
+                t.click();
+              }
+            });
+          } else {
+            showView('interview');
+          }
+        }).catch(err => {
+          console.error('Error al preparar entrevista:', err);
+        });
+      }
     };
 
     // ── TRAJECTORY: SKILLS CRUD ──────────────────────────────────────────
