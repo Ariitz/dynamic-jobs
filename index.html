@@ -1517,9 +1517,10 @@
               <label>API Key</label><input type="text" id="fb-apikey" placeholder="AIza..." />
               <label>Auth Domain</label><input type="text" id="fb-authdomain" placeholder="tuapp.firebaseapp.com" />
               <label>Project ID</label><input type="text" id="fb-projectid" placeholder="tu-project-id" />
-              <div style="margin-top:1.25rem; display:flex; gap:8px;">
+              <div style="margin-top:1.25rem; display:flex; gap:8px; flex-wrap:wrap;">
                 <button class="btn btn-sm" onclick="saveFirebaseConfig()">Guardar</button>
                 <button class="btn-ghost btn-sm" onclick="testFirebase()">Probar conexión</button>
+                <button class="btn-danger btn-sm" style="margin-left:auto;" onclick="disconnectFirebase()">Desconectar</button>
               </div>
               <div class="status-text" id="firebase-status">
                 <span class="status-dot" id="firebase-dot"></span>
@@ -2654,6 +2655,14 @@ Devuelve únicamente el CV completo listo para copiar, sin introducciones ni com
       if (!cfg.apiKey || !cfg.projectId) return;
       ls('firebase_config', cfg);
       initFirebase(cfg);
+    };
+
+    window.disconnectFirebase = () => {
+      if (confirm('¿Desconectar Firebase y volver a almacenamiento local (LocalStorage)?')) {
+        localStorage.removeItem('firebase_config');
+        alert('Firebase desconectado. La página se recargará.');
+        window.location.reload();
+      }
     };
 
     window.testFirebase = async () => {
