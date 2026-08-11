@@ -1577,6 +1577,9 @@
       <div class="section-title">Análisis de IA</div>
       <div class="cv-preview" id="dm-analysis"></div>
       <div class="divider"></div>
+      <div class="section-title">CV Personalizado</div>
+      <div id="dm-cv-section" style="margin-bottom: 1rem;"></div>
+      <div class="divider"></div>
       <div class="section-title">Preparar entrevista</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-sm" onclick="goToInterview('sim')">Simular entrevista ✦</button>
@@ -2279,6 +2282,7 @@ Devuelve únicamente el CV completo listo para copiar, sin introducciones ni com
       }
 
       $('dm-status').value = j.status || 'saved';
+      renderDetailCVSection(j);
       $('detail-modal').classList.add('open');
     };
 
@@ -2299,6 +2303,105 @@ Devuelve únicamente el CV completo listo para copiar, sin introducciones ni com
       jobs = jobs.filter(j => j.id !== currentJobId);
       if (!db) ls('jobs_local', jobs);
       closeModal(); renderVacantes(); renderDashboard();
+    };
+
+    function renderDetailCVSection(j) {
+      const section = $('dm-cv-section');
+      if (j.cv) {
+        section.innerHTML = `
+          <div class="ai-panel" style="margin-top: 0.5rem;">
+            <div class="ai-panel-header" style="padding: 6px 12px; background: rgba(99, 102, 241, 0.08); display: flex; justify-content: space-between; align-items: center;">
+              <div class="ai-panel-title" style="font-size: 12px;">CV Personalizado guardado</div>
+              <div style="display:flex; gap:6px;">
+                <button class="btn-ghost btn-sm" style="padding: 2px 6px; font-size: 11px;" onclick="copyJobCV('${j.id}')">Copiar</button>
+                <button class="btn-ghost btn-sm" style="padding: 2px 6px; font-size: 11px;" onclick="generateCVForJob('${j.id}')">Volver a generar ✦</button>
+              </div>
+            </div>
+            <div class="cv-preview" id="dm-cv-text" style="font-size: 12px; line-height: 1.5; max-height: 250px; overflow-y: auto; white-space: pre-wrap; font-family: monospace; background: var(--surface2); border: 1px solid var(--border); border-top: none; padding: 10px; border-radius: 0 0 8px 8px; text-align: left;">${j.cv}</div>
+          </div>
+        `;
+      } else {
+        section.innerHTML = `
+          <div style="display:flex; flex-direction:column; align-items:center; gap:8px; padding: 1.25rem; background:rgba(99,102,241,0.04); border-radius:8px; border:1px dashed rgba(99,102,241,0.3)">
+            <p style="font-size:12.5px; color:var(--muted); margin:0; text-align:center;">Aún no has generado un CV optimizado para esta vacante.</p>
+            <button class="btn btn-sm" onclick="generateCVForJob('${j.id}')">Generar CV personalizado ✦</button>
+          </div>
+        `;
+      }
+    }
+
+    window.copyJobCV = (id) => {
+      const j = jobs.find(x => x.id === id);
+      if (j && j.cv) {
+        navigator.clipboard.writeText(j.cv);
+        alert('CV copiado al portapapeles ✓');
+      }
+    };
+
+    window.generateCVForJob = async (id) => {
+      const j = jobs.find(x => x.id === id);
+      if (!j) return;
+
+      $('dm-cv-section').innerHTML = `
+        <div class="ai-panel-body loading pulse" style="padding: 1rem; text-align: center; color: var(--muted);">Generando CV personalizado y adaptando tu trayectoria...</div>
+      `;
+
+      loadSkills();
+      loadExperience();
+      const profile = ls('user_profile') || {};
+      const skillsText = skills.map(s => `- ${s.name} (${s.level})`).join('\n');
+      const expText = experience.map(e => `EMPRESA: ${e.company}\nPUESTO: ${e.role}\nPERIODO: ${e.date}\nRESPONSABILIDADES Y LOGROS:\n${e.desc}`).join('\n\n');
+
+      const prompt = `Eres un experto en redacción de CVs y reclutador senior. 
+Crea un CV completo y altamente optimizado desde cero para el candidato adaptado específicamente para aplicar a la vacante "${j.title}" en "${j.company}".
+
+INFORMACIÓN DEL CANDIDATO:
+- Nombre: ${profile.name || 'Arianna Itzamina Aguilar Herrera'}
+- Contacto: ${profile.email || 'correo@ejemplo.com'} · ${profile.location || 'Ciudad de México, México'}
+- Perfil General / Resumen: ${profile.notes || 'No especificado'}
+
+HABILIDADES DEL CANDIDATO (Con niveles autoevaluados):
+${skillsText || 'Ninguna registrada'}
+
+HISTORIAL LABORAL COMPLETO:
+${expText || 'Ninguna experiencia laboral registrada'}
+
+VACANTE OBJETIVO:
+- Puesto: ${j.title}
+- Empresa: ${j.company}
+- Job Description (JD):
+${j.jd}
+
+INSTRUCCIONES CLAVE DE REDACCIÓN Y SELECCIÓN:
+1. **Adaptación Selectiva de Experiencia**: Selecciona y reescribe las descripciones de los trabajos anteriores del candidato para destacar los logros y responsabilidades que sean relevantes para la vacante actual.
+   - Si la vacante es de Tester/QA, enfócate en tareas de pruebas, aseguramiento de calidad, Jira, planes de prueba, automatización y reporte de errores en su historial laboral.
+   - Si la vacante es de Desarrollador, resalta la programación, APIs, base de datos, arquitectura y resolución de bugs en el mismo historial.
+   - Mantén los nombres de empresa y fechas reales tal como se proveen.
+2. **Habilidades**: Incluye las habilidades de su perfil que hagan match con los requisitos del JD, indicando su nivel de experiencia de forma implícita o explícita.
+3. **Resumen Profesional**: Escribe un párrafo de perfil inicial de 3-4 líneas extremadamente atractivo, que conecte el stack del candidato con los dolores y necesidades específicas de la vacante.
+4. **Formato**: Texto plano estructurado con secciones en mayúsculas (PERFIL PROFESIONAL, HISTORIAL LABORAL, HABILIDADES CLAVE, EDUCACIÓN), bullets usando "•" para responsabilidades. No inventes empresas ni certificaciones que no se mencionen en el perfil, pero sí adecúa la narrativa técnica a las necesidades del puesto.
+
+Devuelve únicamente el CV completo listo para copiar, sin introducciones ni comentarios adicionales.`;
+
+      try {
+        const cv = await callGemini(prompt);
+        j.cv = cv;
+        
+        if (db) {
+          await updateDoc(doc(db, 'jobs', j.id), { cv: cv });
+        } else {
+          ls('jobs_local', jobs);
+        }
+        
+        renderDetailCVSection(j);
+        renderDashboard();
+        renderVacantes();
+      } catch (e) {
+        $('dm-cv-section').innerHTML = `
+          <div class="ai-panel-body" style="padding: 1rem; color: var(--red);">Error al generar CV: ${e.message}</div>
+          <button class="btn btn-sm" style="margin-top:0.5rem" onclick="generateCVForJob('${j.id}')">Reintentar</button>
+        `;
+      }
     };
 
     // ── INTERVIEW ──────────────────────────────────────────────────────
